@@ -1,0 +1,48 @@
+# React
+node_modules/
+dist/
+build/
+.eslintcache
+.stylelintcache
+
+# Node.js
+lib-cov/
+pids/
+logs/
+results/
+npm-debug.log*
+
+# OR Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+
+# AWS
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.aws/
+credentials
+.serverless/
+.sst/
+.aws-sam/
+
+# prevents test images from being pushed to GitHub
+/uploads/
+/public/user_uploads/
+*.jpg
+*.jpeg
+*.png
+*.gif
+
+# retain folder structure and ignore the files 
+!**/uploads/.gitkeep

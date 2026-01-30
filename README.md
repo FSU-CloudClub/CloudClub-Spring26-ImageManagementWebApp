@@ -1,5 +1,9 @@
 # AWS Cloud Club Project
 
+# $\color{cyan}{\text{Hello team! Welcome to our project development repository! }}$
+
+**___Please refer to information below if you have questions, but you are always welcome to reach out to me (cgr24c@fsu.edu).___**
+
 ## 📂 File Hierarchy
 * `/src`: Main application source code.
 * `/docs`: Technical documentation and diagrams.

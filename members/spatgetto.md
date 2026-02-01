@@ -1,3 +1,4 @@
+```json
 {
   "name": "James Oram",
   "year": "Freshman",

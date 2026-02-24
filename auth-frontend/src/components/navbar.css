@@ -1,0 +1,18 @@
+.Navbar {
+    background-color: rgb(43, 23, 116);
+    text-decoration-color: aqua;
+
+}
+.fsu-brand-color {
+  color: #efefef !important; /* Use !important to ensure override */
+}
+
+/* To change color on hover */
+.fsu-brand-color:hover {
+  color: #ffb5d0 !important;
+}
+
+.link-color {
+    color: white;
+    text-align: center;
+}

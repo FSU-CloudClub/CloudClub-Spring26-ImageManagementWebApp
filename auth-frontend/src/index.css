@@ -1,0 +1,24 @@
+/* Center the login UI vertically and horizontally */
+.login-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: #f0f4f8;
+}
+
+/* Style for all buttons on the page */
+button {
+  padding: 10px 20px;
+  border-radius: 6px;
+  border: none;
+  background-color: #4f46e5;
+  color: white;
+  cursor: pointer;
+}
+
+/* Change button color when hovering */
+button:hover {
+  background-color: #4338ca;
+}

@@ -1,0 +1,6 @@
+requests
+boto3
+aws-lambda-powertools
+aws-lambda-powertools[validation]
+aws-lambda-powertools[parser]
+

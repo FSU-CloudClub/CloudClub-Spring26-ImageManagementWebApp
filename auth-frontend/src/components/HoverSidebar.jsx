@@ -10,7 +10,7 @@ const HoverSidebar = () => {
   const [isExpanded, setIsExpanded] = useState(false);
 
   return (
-     <div style={{ display: 'flex', height: '30vh', marginTop: '10%', borderRadius: '25px'}}>
+     <div style={{ display: 'flex', height: '100vh', backgroundColor: 'white'}}>
       <div
         className="Navbar"
         onMouseEnter={() => setIsExpanded(true)}
@@ -20,6 +20,10 @@ const HoverSidebar = () => {
           transition: 'width 0.3s ease-in-out',
           overflowX: 'hidden',
           whiteSpace: 'nowrap',
+          height: '40vh',
+          borderTopRightRadius: '10%',
+          borderBottomRightRadius: '10%',
+          marginTop: '10%'
         }}
       >
         <Nav className="flex-column p-3">

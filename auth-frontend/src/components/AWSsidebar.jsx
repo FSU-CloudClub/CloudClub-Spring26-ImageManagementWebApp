@@ -25,7 +25,7 @@ const HoverSidebar = () => {
           </Nav.Link>
           <Nav.Link href="#" className="text-white mb-3 d-flex align-items-center">
             <i className="bi bi-person me-3"></i>
-            {isExpanded && <span>Profile</span>}
+            {isExpanded && <span>Profile{' '}&nbsp&nbsp&nbsp;</span>}
           </Nav.Link>
           <Nav.Link href="#" className="text-white mb-3 d-flex align-items-center">
             <i className="bi bi-gear me-3"></i>

@@ -10,7 +10,7 @@ const HoverSidebar = () => {
   const [isExpanded, setIsExpanded] = useState(false);
 
   return (
-    <div style={{ display: 'flex', height: '100vh' }}>
+     <div style={{ display: 'flex', height: '30vh', marginTop: '10%', borderRadius: '25px'}}>
       <div
         className="Navbar"
         onMouseEnter={() => setIsExpanded(true)}
@@ -19,17 +19,17 @@ const HoverSidebar = () => {
           width: isExpanded ? '250px' : '70px',
           transition: 'width 0.3s ease-in-out',
           overflowX: 'hidden',
-          whiteSpace: 'nowrap'
+          whiteSpace: 'nowrap',
         }}
       >
         <Nav className="flex-column p-3">
           <Nav.Link href="#" className="text-white mb-3 d-flex align-items-center">
-            {isExpanded && <span>Upload</span>}
-            {!isExpanded && <i className="bi bi-house-door"></i>}
+            <i class="bi bi-arrow-up-square-fill"></i>
+            {isExpanded && <span>{'\u00A0\u00A0\u00A0\u00A0'}Upload</span>}
           </Nav.Link>
           <Nav.Link href="#" className="text-white mb-3 d-flex align-items-center">
-            <i className="bi bi-person me-3"></i>
-            {isExpanded && <span>Profile</span>}
+            <i class="bi bi-file-image"></i>
+            {isExpanded && <span>{'\u00A0\u00A0\u00A0\u00A0'}Gallery</span>}
           </Nav.Link>
           <Nav.Link href="#" className="text-white mb-3 d-flex align-items-center">
             <i className="bi bi-gear me-3"></i>
@@ -39,8 +39,7 @@ const HoverSidebar = () => {
       </div>
 
       <main className="p-4 flex-grow-1 bg-light">
-        <h2>Main Content Area</h2>
-        <p>Hover over the sidebar to expand it.</p>
+        {/* <h2> </h2> <p></p>*/}
       </main>
     </div>
   );

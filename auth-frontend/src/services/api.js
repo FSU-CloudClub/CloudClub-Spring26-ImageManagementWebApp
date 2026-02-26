@@ -1,4 +1,4 @@
-let mockImages = [];
+ let mockImages = [];
 
 //create upload image func
 export async function uploadImage(imageFile){

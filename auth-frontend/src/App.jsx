@@ -1,19 +1,25 @@
 import React from 'react';
 import { Authenticator } from '@aws-amplify/ui-react';
-import './index.css';
+import '@aws-amplify/ui-react/styles.css'; // Standard Amplify UI styles
+import 'bootstrap/dist/css/bootstrap.min.css'; // Standard Bootstrap styles
+
+// These imports are REQUIRED so the app knows where to find the custom components
+import AWSNavbar from './components/navbar';
+import HoverSidebar from './components/HoverSidebar';
 
 export default function App() {
   return (
-    // The Authenticator component handles login/signup automatically
     <Authenticator>
       {({ signOut, user }) => (
-        // This div is rendered after the user successfully logs in
         <div className="login-container">
-          {/* Display logged-in user's username */}
-          <h1>Welcome, {user.username}!</h1>
+          {/* Custom components provided by the Navbar and Sidebar devs */}
+          <AWSNavbar />
+          <HoverSidebar />
           
-          {/* Sign out button */}
-          <button onClick={signOut}>Sign Out</button>
+          <div className="container mt-4">
+            <h1>Welcome, {user.username}!</h1>
+            <button className="btn btn-danger" onClick={signOut}>Sign Out</button>
+          </div>
         </div>
       )}
     </Authenticator>

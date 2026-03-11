@@ -2,15 +2,17 @@ import argparse
 import boto3
 import json
 import os
+import sys
 
 def main():
     parser = argparse.ArgumentParser(description = "Local Rekognition lab harness")
     parser.add_argument("--bucket", required = True, help="S3 bucket name")
     parser.add_argument("--key", required=True, help="S3 object key (image path)")
     parser.add_argument("--top", type = int, default = 10, help="Number of top labels to display")
+    parser.add_argument("--region", default = "us-east-1", help="AWS region")
     args = parser.parse_args()
 
-    rekognition = boto3.client("rekognition")
+    rekognition = boto3.client("rekognition", region_name=args.region)
     
     try:
         response = rekognition.detect_labels(
@@ -19,11 +21,12 @@ def main():
                     "Bucket": args.bucket,
                     "Name": args.key
                 }
-            }
+            },
+            MaxLabels=50
         )
     except Exception as e:
         print(f"Error calling Rekognition: {e}")
-        return
+        sys.exit(1)
     
     os.makedirs("out/raw", exist_ok = True)
     safe_key = args.key.replace("/", "_")

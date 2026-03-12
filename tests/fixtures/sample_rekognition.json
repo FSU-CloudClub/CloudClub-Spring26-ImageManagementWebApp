@@ -1,0 +1,7 @@
+{
+  "Labels": [
+    { "Name": "Dog", "Confidence": 98.2 },
+    { "Name": "Pet", "Confidence": 96.4 },
+    { "Name": "Animal", "Confidence": 93.1 }
+  ]
+}

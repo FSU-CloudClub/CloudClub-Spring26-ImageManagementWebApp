@@ -1,12 +1,10 @@
-import json
+from aws_lambda_powertools.event_handler import APIGatewayRestResolver
+from aws_lambda_powertools.utilities.typing.lambda_context import LambdaContext
 
-from aws_lambda_powertools.utilities.parser import event_parser
+from shared.exceptions import exception_middleware
 
-def lambda_handler(event, context):
-    print("This is a sample change")
-    return {
-        "statusCode": 200,
-        "body": json.dumps({
-            "message": f"healthy",
-        }),
-    }
+app = APIGatewayRestResolver()
+
+@exception_middleware
+def lambda_handler(event: dict, context: LambdaContext) -> dict:
+    return app.resolve(event, context)

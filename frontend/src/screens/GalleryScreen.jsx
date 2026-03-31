@@ -1,6 +1,8 @@
 import React, {useState, useEffect} from 'react';
 import { Authenticator } from '@aws-amplify/ui-react';
+
 //import any API functions or compontents
+import ImageGrid from '../components/ImageGrid';
 
 const GalleryScreen = ({user, signOut}) => {
     //any states can go here; you can think of them like variables :)
@@ -41,7 +43,11 @@ const GalleryScreen = ({user, signOut}) => {
     }, [user]); //change every time the user is changed, if empty the useEffect will only run once (MUST BE THERE IN EVERY CASE)
 
     //define what the UI will look like in all cases (loading, error, data was fetched)
-    if(loading) return <div className="text-center mt-5"><h4>Syncing with AWS...</h4></div>;
+    if(loading) return (
+        <div className="text-center mt-5">
+            <h4>Syncing with AWS...</h4>
+            <ImageGrid/>
+        </div>);
     if (error)  return <div className="alert alert-danger">{error}</div>;
 
     return (
@@ -52,7 +58,7 @@ const GalleryScreen = ({user, signOut}) => {
 
             <section className="content-area">
                 {/* Pass data down to smaller components here */}
-                <p>Everything else</p>
+                <p>Loaded Images</p>
             </section>
         </div>
     );

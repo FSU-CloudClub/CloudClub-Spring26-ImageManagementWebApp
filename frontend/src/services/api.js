@@ -1,6 +1,5 @@
- let mockImages = [];
+let mockImages = [];
 
-//create upload image func
 export async function uploadImage(imageFile){
     return new Promise((resolve) => { 
         setTimeout(() => {
@@ -15,7 +14,6 @@ export async function uploadImage(imageFile){
         });
 }
 
-//create get images func 
 export async function getImages(){
     return new Promise((resolve) =>{
         setTimeout(() => {
@@ -23,7 +21,7 @@ export async function getImages(){
         }, 500);
     });
 }
-//create delete images func
+
 export async function deleteImage(id){
     return new Promise((resolve) => {  
         setTimeout(()=> {
@@ -32,7 +30,3 @@ export async function deleteImage(id){
         }, 500);
     });
 }
-
-
-
-

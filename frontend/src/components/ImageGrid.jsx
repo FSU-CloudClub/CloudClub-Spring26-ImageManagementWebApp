@@ -1,5 +1,5 @@
 import React from 'react';
-import './ImageGrid.css';
+import '../styles/ImageGrid.css';
 
 const ImageGrid = ({ images = [], loading = true }) => {
   const skeletonCount = 12;

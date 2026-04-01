@@ -53,10 +53,9 @@ def handler(event: dict, context: Any) -> dict:
     except (KeyError, ValueError, json.JSONDecodeError) as exc:
         log(request_id, "event_parse_error", error=str(exc))
         return {"statusCode": 400, "body": json.dumps({"error": f"Bad event payload: {exc}"})}
-
     log(request_id, "invocation_start", bucket=bucket, key=key, min_confidence=min_confidence)
-    t_rekog_start = time.monotonic()
 
+    t_rekog_start = time.monotonic()
     try:
         raw_response = detect_labels(bucket, key, min_confidence)
     except Exception as exc:

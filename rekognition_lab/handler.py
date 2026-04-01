@@ -6,6 +6,7 @@ from typing import Any
 import boto3
 from parser import parse_detect_labels
 
+
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 

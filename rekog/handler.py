@@ -1,11 +1,10 @@
-from __future__ import annotations
 import json
 import logging
 import os
 import time
 from typing import Any
 import boto3
-from parser import parse_detect_labels  # Issue 3 dependency
+from parser import parse_detect_labels
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -30,11 +29,14 @@ def extract_s3_location(event: dict) -> tuple[str, str]:
         raise ValueError("Cannot locate S3 bucket/key in event payload.")
 
     record = records[0]
+    if "s3" in record:
+         return record["s3"]["bucket"]["name"], record["s3"]["object"]["key"]
 
     raise ValueError(f"Unrecognised event record shape: {list(record.keys())}")
 
 def detect_labels(bucket: str, key: str, min_confidence: float) -> dict:
-    return rekognition.detect_labels(
+    client = get_rekognition_client()
+    return client.detect_labels(
         Image={"S3Object": {"Bucket": bucket, "Name": key}},
         MaxLabels=100,
         MinConfidence=min_confidence,
@@ -50,18 +52,19 @@ def handler(event: dict, context: Any) -> dict:
         bucket, key = extract_s3_location(event)
     except (KeyError, ValueError, json.JSONDecodeError) as exc:
         log(request_id, "event_parse_error", error=str(exc))
-        return {"statusCode": 400, "body": {"error": f"Bad event payload: {exc}"}}
+        return {"statusCode": 400, "body": json.dumps({"error": f"Bad event payload: {exc}"})}
 
     log(request_id, "invocation_start", bucket=bucket, key=key, min_confidence=min_confidence)
     t_rekog_start = time.monotonic()
+
     try:
         raw_response = detect_labels(bucket, key, min_confidence)
     except Exception as exc:
         log(request_id, "rekognition_error", bucket=bucket, key=key, error=str(exc))
-        return {"statusCode": 502, "body": {"error": f"Rekognition call failed: {exc}"}}
+        return {"statusCode": 502, "body": json.dumps({"error": f"Rekognition call failed: {exc}"})}
 
     rekog_time = round((time.monotonic() - t_rekog_start) * 1000, 2)
-    parsed = parse_detect_labels(raw_response, min_confidence=min_confidence)
+    parsed_tags = parse_detect_labels(raw_response)
     total_time = round((time.monotonic() - t_total_start) * 1000, 2)
 
     log(
@@ -69,19 +72,18 @@ def handler(event: dict, context: Any) -> dict:
         "invocation_complete",
         bucket=bucket,
         key=key,
-        label_count=parsed["label_count"],
-        model_version=parsed["model_version"],
+        label_count=len(parsed_tags),
         duration_ms={"rekognition": rekog_time, "total": total_time},
     )
     return {
         "statusCode": 200,
-        "body": {
+        "body": json.dumps({
             "bucket": bucket,
             "key": key,
-            **parsed,
+            "tags": parsed_tags,
             "duration_ms": {
-                "rekognition": rekog_ms,
-                "total": total_ms,
+                "rekognition": rekog_time,
+                "total": total_time,
             },
-        },
+        }),
     }

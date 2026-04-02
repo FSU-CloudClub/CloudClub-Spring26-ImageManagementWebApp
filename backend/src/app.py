@@ -1,9 +1,11 @@
 
+
 import os
 import boto3
 import json
 from aws_lambda_powertools.event_handler import APIGatewayRestResolver
 from aws_lambda_powertools.utilities.typing.lambda_context import LambdaContext
+from aws_lambda_powertools.utilities.parser import parse
 
 from pydantic import BaseModel 
 
@@ -11,7 +13,7 @@ from boto3.dynamodb.conditions import Key
 from decimal import Decimal
 
 from shared.auth import auth_middleware
-from shared.exceptions import exception_middleware
+from shared.exceptions import InternalServerErrorException, exception_middleware, BadRequestException
 
 
 app = APIGatewayRestResolver()
@@ -22,6 +24,8 @@ BUCKET_NAME = os.environ["BUCKET_NAME"]
 dynamodb = boto3.resource("dynamodb")
 dynamodb_client = boto3.client("dynamodb")
 s3 = boto3.client('s3')
+
+table = dynamodb.Table("Images")
 
 class ImageModel(BaseModel):
     imageId: str
@@ -78,6 +82,37 @@ def list_images():
     ]
 
     return json.loads(json.dumps(checked_items, cls = DecimalEncoder))
+  
+class UpdateImageRequest(BaseModel):
+    userId: str
+    imageId: str
+    tags: list
+
+@app.patch("/update-metadata")
+def update_image_metadata():
+    data = parse(model=UpdateImageRequest,event=app.current_event.json_body)
+
+    if data is None:
+        raise BadRequestException("Invalid request body")
+
+    response = table.update_item(
+        Key = {"userId" : data.userId,
+                "imageId": data.imageId},
+        UpdateExpression= 'SET #t = :newTag',  
+        ExpressionAttributeNames= {'#t': 'tags'}, 
+        ExpressionAttributeValues={
+            ':newTag': data.tags
+        } 
+    )
+    
+    if not response:
+        raise InternalServerErrorException("Failed to update image metadata")
+
+
+    return {
+        "message": "Image updated",
+        "data": response
+    }
 
 @app.get("/health")
 def health():

@@ -54,6 +54,11 @@ Resources:
           Properties:
             Path: /health
             Method: get
+        UpateImage:
+          Type: Api
+          Properties:
+            Path: /update-metadata
+            Method: patch
         ListImages:
           Type: Api
           Properties:

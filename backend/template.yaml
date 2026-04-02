@@ -16,28 +16,20 @@ Globals:
       LogFormat: JSON
   Api:
     TracingEnabled: true
+
+Parameters:
+  TableName:
+    Type: String
+    Description: Name of the existing DynamoDB table
+  BucketName:
+    Type: String
+    Description: Name of the existing S3 bucket
+  GSIName:
+    Type: String
+    Default: userId-uploadedAt-index
+    Description: Name of the GSI on the DynamoDB table
+
 Resources:
-  ImageBucket:
-    Type: AWS::S3::Bucket
-    Properties:
-      BucketName: !Sub "${AWS::StackName}-image-bucket"
-
-  ImageMetadataTable:
-    Type: AWS::DynamoDB::Table
-    Properties:
-      TableName: !Sub "${AWS::StackName}-image-metadata"
-      AttributeDefinitions:
-        - AttributeName: PK
-          AttributeType: S
-        - AttributeName: SK
-          AttributeType: S
-      KeySchema:
-        - AttributeName: PK
-          KeyType: HASH
-        - AttributeName: SK
-          KeyType: RANGE
-      BillingMode: PAY_PER_REQUEST
-
   BackendFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -48,20 +40,25 @@ Resources:
         - x86_64
       Environment:
         Variables:
-          TABLE_NAME: !Ref ImageMetadataTable
-          BUCKET_NAME: !Ref ImageBucket
+          TABLE_NAME: !Ref TableName
+          BUCKET_NAME: !Ref BucketName
+          GSI_NAME: !Ref GSIName
       Policies:
         - DynamoDBCrudPolicy:
-            TableName: !Ref ImageMetadataTable
+            TableName: !Ref TableName
         - S3CrudPolicy:
-            BucketName: !Ref ImageBucket
+            BucketName: !Ref BucketName
       Events:
         Backend:
           Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
           Properties:
             Path: /health
             Method: get
-
+        ListImages:
+          Type: Api
+          Properties:
+            Path: /images
+            Method: get
   ApplicationResourceGroup:
     Type: AWS::ResourceGroups::Group
     Properties:
@@ -87,7 +84,7 @@ Outputs:
     Value: !GetAtt BackendFunctionRole.Arn
   ImageBucketName:
     Description: S3 bucket for image uploads
-    Value: !Ref ImageBucket
+    Value: !Ref BucketName
   ImageMetadataTableName:
     Description: DynamoDB table for image metadata
-    Value: !Ref ImageMetadataTable
+    Value: !Ref TableName

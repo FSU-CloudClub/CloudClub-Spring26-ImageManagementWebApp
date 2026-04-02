@@ -1,20 +1,80 @@
 import os
 import boto3
+import json
 from aws_lambda_powertools.event_handler import APIGatewayRestResolver
 from aws_lambda_powertools.utilities.typing.lambda_context import LambdaContext
 
+from pydantic import BaseModel 
+
 from boto3.dynamodb.conditions import Key
+from decimal import Decimal
 
 from shared.auth import auth_middleware
 from shared.exceptions import exception_middleware
 
 app = APIGatewayRestResolver()
 
-TABLE_NAME = os.environ.get("TABLE_NAME")
-BUCKET_NAME = os.environ.get("BUCKET_NAME")
+TABLE_NAME = os.environ["TABLE_NAME"]
+BUCKET_NAME = os.environ["BUCKET_NAME"]
 
 dynamodb = boto3.resource("dynamodb")
 s3 = boto3.client("s3")
+
+class ImageModel(BaseModel):
+    imageId: str
+    userId: str
+    tags: list
+    s3Key: str
+    uploadedAt: str
+    dimension: list
+    size: int
+    downloadUrl: str
+
+
+class DecimalEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, Decimal):
+            return float(obj)
+        return super().default(obj)
+
+@app.get("/images")
+def list_images():
+    user_id = app.lambda_context.user_id
+    table = dynamodb.Table(TABLE_NAME)
+
+    # query DB
+    response = table.query(
+        KeyConditionExpression = Key("userId").eq(user_id),
+        ScanIndexForward = False
+    )
+
+    items = response.get("Items", [])
+
+    # generate presigned URLs
+    for item in items:
+        s3_key = item.get("s3Key")
+        if s3_key:
+            item["downloadUrl"] = s3.generate_presigned_url(
+                ClientMethod = "get_object",
+                Params = {"Bucket": BUCKET_NAME, "Key": s3_key}
+            )
+
+    # request validation
+    checked_items = [
+        ImageModel(
+            imageId=item.get("imageId"),
+            userId=item.get("userId"),
+            tags=item.get("tags"),
+            s3Key=item.get("s3Key"),
+            uploadedAt=item.get("uploadedAt"),
+            dimension=item.get("dimension"),
+            size=item.get("size"),
+            downloadUrl=item.get("downloadUrl")
+        ).model_dump()
+        for item in items
+    ]
+
+    return json.loads(json.dumps(checked_items, cls = DecimalEncoder))
 
 @app.get("/health")
 def health_check():

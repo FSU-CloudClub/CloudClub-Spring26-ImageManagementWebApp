@@ -1,3 +1,4 @@
+
 import os
 import boto3
 import json
@@ -12,13 +13,15 @@ from decimal import Decimal
 from shared.auth import auth_middleware
 from shared.exceptions import exception_middleware
 
+
 app = APIGatewayRestResolver()
 
 TABLE_NAME = os.environ["TABLE_NAME"]
 BUCKET_NAME = os.environ["BUCKET_NAME"]
 
 dynamodb = boto3.resource("dynamodb")
-s3 = boto3.client("s3")
+dynamodb_client = boto3.client("dynamodb")
+s3 = boto3.client('s3')
 
 class ImageModel(BaseModel):
     imageId: str
@@ -77,8 +80,23 @@ def list_images():
     return json.loads(json.dumps(checked_items, cls = DecimalEncoder))
 
 @app.get("/health")
-def health_check():
-    return {"message": "healthy"}
+def health():
+    status = {}
+    overall_healthy = True
+
+    # S3 Check
+    s3.head_bucket(Bucket=BUCKET_NAME)
+    status['S3'] = 'Healthy'
+
+    # DynamoDB Check
+    res = dynamodb_client.describe_table(TableName=TABLE_NAME)
+    state = res['Table']['TableStatus']
+    status['DynamoDB'] = 'Healthy' if state == 'ACTIVE' else f'Status: {state}'
+
+    return {
+        "status": "OK" if overall_healthy else "DEGRADED",
+        "details": status
+    }
 
 @exception_middleware
 @auth_middleware

@@ -54,6 +54,11 @@ Resources:
           Properties:
             Path: /health
             Method: get
+        GetImageMetadata:
+          Type: Api
+          Properties:
+            Path: /images/{imageId}
+            Method: get
         UpateImage:
           Type: Api
           Properties:

@@ -1,5 +1,3 @@
-
-
 import os
 import boto3
 import json
@@ -16,6 +14,7 @@ from decimal import Decimal
 from shared.auth import auth_middleware
 from shared.exceptions import InternalServerErrorException, exception_middleware, BadRequestException
 
+from shared.exceptions import exception_middleware, NotFoundException, InternalServerErrorException
 
 app = APIGatewayRestResolver()
 
@@ -26,7 +25,42 @@ dynamodb = boto3.resource("dynamodb")
 dynamodb_client = boto3.client("dynamodb")
 s3 = boto3.client('s3')
 
-table = dynamodb.Table("Images")
+table = dynamodb.Table(TABLE_NAME)
+PRESIGNED_URL_EXPIRY = 3600
+
+
+class MetadataResponse(BaseModel):
+    tags: list[str]
+    downloadUrl: str
+
+
+def generate_presigned_url(s3_client, client_method, method_parameters, expires_in):
+    return s3_client.generate_presigned_url(
+        ClientMethod=client_method,
+        Params=method_parameters,
+        ExpiresIn=expires_in
+    )
+
+@app.get("/images/<imageId>")
+def get_image_metadata(imageId: str) -> MetadataResponse:
+    user_id = app.context.user_id
+    response = table.get_item(Key={"userId": user_id, "imageId": imageId})
+    item = response.get("Item")
+
+    if not item:
+        raise NotFoundException(f"Image '{imageId}' not found for user '{user_id}'")
+
+    if "tags" not in item or "s3Key" not in item:
+        raise InternalServerErrorException("Malformed item in database")
+
+    download_url = generate_presigned_url(
+        s3_client=s3,
+        client_method="get_object",
+        method_parameters={"Bucket": BUCKET_NAME, "Key": item["s3Key"]},
+        expires_in=PRESIGNED_URL_EXPIRY
+    )
+
+    return MetadataResponse(tags=item["tags"], downloadUrl=download_url)
 
 class ImageModel(BaseModel):
     imageId: str

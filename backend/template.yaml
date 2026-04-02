@@ -64,6 +64,11 @@ Resources:
           Properties:
             Path: /images
             Method: get
+        DeleteImage:
+          Type: Api
+          Properties:
+            Path: /image/<image_id>
+            Method: delete
   ApplicationResourceGroup:
     Type: AWS::ResourceGroups::Group
     Properties:

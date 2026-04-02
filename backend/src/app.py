@@ -3,6 +3,7 @@
 import os
 import boto3
 import json
+
 from aws_lambda_powertools.event_handler import APIGatewayRestResolver
 from aws_lambda_powertools.utilities.typing.lambda_context import LambdaContext
 from aws_lambda_powertools.utilities.parser import parse
@@ -36,7 +37,6 @@ class ImageModel(BaseModel):
     dimension: list
     size: int
     downloadUrl: str
-
 
 class DecimalEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -114,6 +114,25 @@ def update_image_metadata():
         "data": response
     }
 
+  
+@app.delete("/image/<image_id>")
+def delete_image(image_id: str):
+    user_id = app.context.user_id
+        
+    s3.delete_object(
+        Bucket = BUCKET_NAME,
+        Key = f"images/{image_id}"
+    )
+    
+    response = dynamodb.Table(TABLE_NAME).delete_item(
+        Key = {
+          'userId': user_id,
+          'imageId': image_id
+        }
+    )
+        
+    return response
+  
 @app.get("/health")
 def health():
     status = {}

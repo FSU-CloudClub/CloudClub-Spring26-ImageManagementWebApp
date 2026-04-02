@@ -6,7 +6,7 @@ import ImageGrid from '../components/ImageGrid';
 
 const GalleryScreen = ({user, signOut}) => {
     //any states can go here; you can think of them like variables :)
-    const [loading, setLoading] = useState(true); //set loading to true for when the page first renders
+    const [loading, setLoading] = useState(false); //set loading to true for when the page first renders
     const [error, setError] = useState(null);
 
     //any data fetching goes here (e.g. first 20 user images if that is what you want displayed)

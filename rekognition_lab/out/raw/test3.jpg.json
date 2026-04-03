@@ -1,0 +1,307 @@
+{
+  "Labels": [
+    {
+      "Name": "Book",
+      "Confidence": 89.53333282470703,
+      "Instances": [],
+      "Parents": [
+        {
+          "Name": "Publication"
+        }
+      ],
+      "Aliases": [],
+      "Categories": [
+        {
+          "Name": "Hobbies and Interests"
+        }
+      ]
+    },
+    {
+      "Name": "Publication",
+      "Confidence": 89.53333282470703,
+      "Instances": [],
+      "Parents": [],
+      "Aliases": [],
+      "Categories": [
+        {
+          "Name": "Education"
+        }
+      ]
+    },
+    {
+      "Name": "Adult",
+      "Confidence": 78.07528686523438,
+      "Instances": [
+        {
+          "BoundingBox": {
+            "Width": 0.6226323246955872,
+            "Height": 0.7439479827880859,
+            "Left": 0.3559420108795166,
+            "Top": 0.09683820605278015
+          },
+          "Confidence": 78.07528686523438
+        }
+      ],
+      "Parents": [
+        {
+          "Name": "Person"
+        }
+      ],
+      "Aliases": [],
+      "Categories": [
+        {
+          "Name": "Person Description"
+        }
+      ]
+    },
+    {
+      "Name": "Male",
+      "Confidence": 78.07528686523438,
+      "Instances": [
+        {
+          "BoundingBox": {
+            "Width": 0.6226323246955872,
+            "Height": 0.7439479827880859,
+            "Left": 0.3559420108795166,
+            "Top": 0.09683820605278015
+          },
+          "Confidence": 78.07528686523438
+        }
+      ],
+      "Parents": [
+        {
+          "Name": "Person"
+        }
+      ],
+      "Aliases": [],
+      "Categories": [
+        {
+          "Name": "Person Description"
+        }
+      ]
+    },
+    {
+      "Name": "Man",
+      "Confidence": 78.07528686523438,
+      "Instances": [
+        {
+          "BoundingBox": {
+            "Width": 0.6226323246955872,
+            "Height": 0.7439479827880859,
+            "Left": 0.3559420108795166,
+            "Top": 0.09683820605278015
+          },
+          "Confidence": 78.07528686523438
+        }
+      ],
+      "Parents": [
+        {
+          "Name": "Adult"
+        },
+        {
+          "Name": "Male"
+        },
+        {
+          "Name": "Person"
+        }
+      ],
+      "Aliases": [],
+      "Categories": [
+        {
+          "Name": "Person Description"
+        }
+      ]
+    },
+    {
+      "Name": "Person",
+      "Confidence": 78.07528686523438,
+      "Instances": [
+        {
+          "BoundingBox": {
+            "Width": 0.6226323246955872,
+            "Height": 0.7439479827880859,
+            "Left": 0.3559420108795166,
+            "Top": 0.09683820605278015
+          },
+          "Confidence": 78.07528686523438
+        }
+      ],
+      "Parents": [],
+      "Aliases": [
+        {
+          "Name": "Human"
+        }
+      ],
+      "Categories": [
+        {
+          "Name": "Person Description"
+        }
+      ]
+    },
+    {
+      "Name": "Mask",
+      "Confidence": 74.12409210205078,
+      "Instances": [],
+      "Parents": [],
+      "Aliases": [],
+      "Categories": [
+        {
+          "Name": "Apparel and Accessories"
+        }
+      ]
+    },
+    {
+      "Name": "Nature",
+      "Confidence": 60.265628814697266,
+      "Instances": [],
+      "Parents": [
+        {
+          "Name": "Outdoors"
+        }
+      ],
+      "Aliases": [],
+      "Categories": [
+        {
+          "Name": "Nature and Outdoors"
+        }
+      ]
+    },
+    {
+      "Name": "Outdoors",
+      "Confidence": 60.265628814697266,
+      "Instances": [],
+      "Parents": [],
+      "Aliases": [],
+      "Categories": [
+        {
+          "Name": "Nature and Outdoors"
+        }
+      ]
+    },
+    {
+      "Name": "Snow",
+      "Confidence": 60.265628814697266,
+      "Instances": [],
+      "Parents": [
+        {
+          "Name": "Nature"
+        },
+        {
+          "Name": "Outdoors"
+        }
+      ],
+      "Aliases": [],
+      "Categories": [
+        {
+          "Name": "Nature and Outdoors"
+        }
+      ]
+    },
+    {
+      "Name": "Snowman",
+      "Confidence": 60.265628814697266,
+      "Instances": [
+        {
+          "BoundingBox": {
+            "Width": 0.7892585396766663,
+            "Height": 0.7512198090553284,
+            "Left": 0.19528019428253174,
+            "Top": 0.09691816568374634
+          },
+          "Confidence": 60.265628814697266
+        }
+      ],
+      "Parents": [
+        {
+          "Name": "Nature"
+        },
+        {
+          "Name": "Outdoors"
+        },
+        {
+          "Name": "Snow"
+        },
+        {
+          "Name": "Winter"
+        }
+      ],
+      "Aliases": [],
+      "Categories": [
+        {
+          "Name": "Events and Attractions"
+        }
+      ]
+    },
+    {
+      "Name": "Winter",
+      "Confidence": 60.265628814697266,
+      "Instances": [],
+      "Parents": [],
+      "Aliases": [],
+      "Categories": [
+        {
+          "Name": "Nature and Outdoors"
+        }
+      ]
+    },
+    {
+      "Name": "Face",
+      "Confidence": 59.77107238769531,
+      "Instances": [],
+      "Parents": [
+        {
+          "Name": "Head"
+        },
+        {
+          "Name": "Person"
+        }
+      ],
+      "Aliases": [],
+      "Categories": [
+        {
+          "Name": "Person Description"
+        }
+      ]
+    },
+    {
+      "Name": "Head",
+      "Confidence": 59.77107238769531,
+      "Instances": [],
+      "Parents": [
+        {
+          "Name": "Person"
+        }
+      ],
+      "Aliases": [],
+      "Categories": [
+        {
+          "Name": "Person Description"
+        }
+      ]
+    },
+    {
+      "Name": "Carnival",
+      "Confidence": 55.649131774902344,
+      "Instances": [],
+      "Parents": [],
+      "Aliases": [],
+      "Categories": [
+        {
+          "Name": "Events and Attractions"
+        }
+      ]
+    }
+  ],
+  "LabelModelVersion": "3.0",
+  "ResponseMetadata": {
+    "RequestId": "20bc1d68-c9a9-4574-8717-e4f9b19307c1",
+    "HTTPStatusCode": 200,
+    "HTTPHeaders": {
+      "x-amzn-requestid": "20bc1d68-c9a9-4574-8717-e4f9b19307c1",
+      "content-type": "application/x-amz-json-1.1",
+      "content-length": "3150",
+      "date": "Fri, 03 Apr 2026 05:18:34 GMT"
+    },
+    "RetryAttempts": 0
+  }
+}

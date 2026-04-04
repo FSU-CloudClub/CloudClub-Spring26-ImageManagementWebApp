@@ -3,11 +3,14 @@ import { Authenticator } from '@aws-amplify/ui-react';
 
 //import any API functions or compontents
 import ImageGrid from '../components/ImageGrid';
+import { getImages } from '../services/api';
+import { resolveS3KeyToUrl } from '../utils/s3Resolver';
 
 const GalleryScreen = ({user, signOut}) => {
     //any states can go here; you can think of them like variables :)
     const [loading, setLoading] = useState(false); //set loading to true for when the page first renders
     const [error, setError] = useState(null);
+    const [images, setImages] = useState([]);
 
     //any data fetching goes here (e.g. first 20 user images if that is what you want displayed)
 
@@ -26,11 +29,29 @@ const GalleryScreen = ({user, signOut}) => {
             try
             {
                 setLoading(true); //set loading to true so the UI will show "Rendering pictures"
-                //const result = await [insert API function call];
-                //setData(result); place the data in a state so it can be used throughout the component (you'd have to declare this with the loading state variable)
+                
+                // Fetch the list of image objects (mocked or real from the API)
+                const result = await getImages();
+                
+                // Convert each image's S3 Key into a viewable pre-signed URL using Storage.get / getUrl
+                const imagesWithUrls = await Promise.all(
+                    result.map(async (img) => {
+                        // Use img.s3Key if the backend provides it, otherwise fallback to img.name for mock purposes
+                        const keyToResolve = img.s3Key || img.name;
+                        const presignedUrl = await resolveS3KeyToUrl(keyToResolve);
+                        
+                        return {
+                            ...img,
+                            url: presignedUrl // This sets the url property used by the ImageGrid
+                        };
+                    })
+                );
+                
+                setImages(imagesWithUrls); // place the updated data in state
             } 
-            catch
+            catch (err)
             {
+                console.error("Failed to load gallery data:", err);
                 setError("Issue with the API.");
             }
             finally //will run after try/catch
@@ -46,7 +67,7 @@ const GalleryScreen = ({user, signOut}) => {
     if(loading) return (
         <div className="text-center mt-5">
             <h4>Syncing with AWS...</h4>
-            <ImageGrid/>
+            <ImageGrid loading={true} />
         </div>);
     if (error)  return <div className="alert alert-danger">{error}</div>;
 
@@ -58,7 +79,11 @@ const GalleryScreen = ({user, signOut}) => {
 
             <section className="content-area">
                 {/* Pass data down to smaller components here */}
-                <p>Loaded Images</p>
+                {images.length > 0 ? (
+                    <ImageGrid images={images} loading={false} />
+                ) : (
+                    <p>No images found. Upload some to see them here!</p>
+                )}
             </section>
         </div>
     );

@@ -10,6 +10,7 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import AWSNavbar from './components/navbar';
 import HoverSidebar from './components/HoverSidebar';
 import WelcomeScreen from './screens/WelcomeScreen';
+import Dashboard from './components/Dashboard';
 import GalleryScreen from './screens/GalleryScreen';
 import UploadScreen from './screens/UploadScreen';
 

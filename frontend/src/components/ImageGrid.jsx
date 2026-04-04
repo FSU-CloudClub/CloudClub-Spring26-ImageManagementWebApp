@@ -19,7 +19,7 @@ const ImageGrid = ({ images = [], loading = true }) => {
   }
 
   return (
-    <div className="image-grid">
+    <div className="image-grid animate-fade-in">
       {images.map((image) => (
         <div key={image.id} className="image-card">
           <img src={image.url} alt={image.name} />

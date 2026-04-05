@@ -1,4 +1,47 @@
-/* Center the login UI vertically and horizontally */
+/* ── Base / Typography ───────────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  color: #1e1b4b;
+  background: #f0f4f8;
+  margin: 0;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  font-weight: 700;
+  line-height: 1.2;
+  margin-bottom: 0.5rem;
+}
+
+p {
+  margin-bottom: 1rem;
+}
+
+/* ── Buttons ─────────────────────────────────────────────────────────────── */
+/* Scoped to avoid overriding Bootstrap and inline styles */
+button:not([class]) {
+  padding: 10px 20px;
+  border-radius: 6px;
+  border: none;
+  background-color: #4f46e5;
+  color: white;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 1rem;
+  transition: background-color 0.2s ease;
+}
+
+button:not([class]):hover {
+  background-color: #4338ca;
+}
+
+/* ── Layout ──────────────────────────────────────────────────────────────── */
 .login-container {
   display: flex;
   flex-direction: column;
@@ -8,34 +51,34 @@
   background: #f0f4f8;
 }
 
-/* Style for all buttons on the page */
-button {
-  padding: 10px 20px;
-  border-radius: 6px;
-  border: none;
-  background-color: #4f46e5;
-  color: white;
-  cursor: pointer;
-}
-
-/* Change button color when hovering */
-/* button:hover {
-  background-color: #4338ca;
-} */
-button:hover {
-  background-color: #4338ca;
-}
 .processing-overlay {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0,0,0,0.6);
+  background: rgba(0, 0, 0, 0.6);
   color: white;
   font-size: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 9999;
+}
+
+/* ── Fade-in animation ───────────────────────────────────────────────────── */
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Mobile layout fix ───────────────────────────────────────────────────── */
+@media (max-width: 576px) {
+  body {
+    font-size: 15px;
+  }
 }

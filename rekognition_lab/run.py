@@ -3,6 +3,7 @@ import boto3
 import json
 import os
 import sys
+from rekognition_lab.parser import parse_detect_labels
 
 def main():
     parser = argparse.ArgumentParser(description = "Local Rekognition lab harness")
@@ -35,17 +36,52 @@ def main():
     with open(output_path, "w") as f:
         json.dump(response, f, indent=2)
 
-    labels = response.get("Labels", [])
+    tags = parse_detect_labels(response)
 
-    print(f"Found {len(labels)} labels.")
-    print(f"Top {min(args.top, len(labels))} labels:")
+    print(f"Found {len(tags)} tags.")
+    print(f"Top {min(args.top, len(tags))} tags:")
 
-    for label in labels[:args.top]:
-        name = label.get("Name", "UNKNOWN")
-        conf = label.get("Confidence", 0.0)
-        print(f"- {name}: {conf:.2f}%")
+    for tag in tags[:args.top]:
+        print(f"- {tag['name']}: {tag['confidence']:.2f}%")
 
     print(f"Raw JSON saved to {output_path}")
+    results = process_image(rekognition, args.bucket, args.key)
+
+    print(json.dumps(results, indent=2))
+
+
+def process_image(rekog, bucket, key):
+    #Task 9
+    mod_response = rekog.detect_moderation_labels(
+        Image={'S3Object': {'Bucket': bucket, 'Name':key}},
+        MinConfidence=70
+    )
+    is_flagged = len(mod_response.get("ModerationLabels", [])) > 0
+    if is_flagged:
+        return {
+            "status": "flagged",
+            "moderation":{
+                "flagged": True,
+                "labels": [l['Name'] for l in mod_response.get("ModerationLabels", [])]
+            },
+            "tags": []
+        }
+    
+    #Task 8
+    response = rekog.detect_labels(
+        Image={'S3Object': {'Bucket': bucket, 'Name':key}},
+        MaxLabels=10,
+        MinConfidence=80
+    )
+    tags = [l['Name'] for l in response.get("Labels", [])]
+    return {
+        "status": "ok",
+        "moderation":{
+            "flagged": False,
+            "labels": []
+        },
+        "tags": tags
+    }
 
 if __name__ == "__main__":
     main()

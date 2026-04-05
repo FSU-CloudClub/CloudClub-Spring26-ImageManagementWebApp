@@ -39,6 +39,7 @@ const GalleryScreen = ({user, signOut}) => {
                 setImages(result.images || []); //place the data in a state so it can be used throughout the component (you'd have to declare this with the loading state variable)
             } 
             catch (err)
+            catch (err)
             {
                 console.error("Gallery Load Error:", err);
                 setError("Issue with the API. Please check your AWS connection.");
@@ -63,6 +64,12 @@ const GalleryScreen = ({user, signOut}) => {
             </div>
         );
     }
+    if(loading) return (
+        <div className="text-center mt-5">
+            <h4>Syncing with AWS...</h4>
+            <ImageGrid loading={true} />
+        </div>);
+    if (error)  return <div className="alert alert-danger">{error}</div>;
 
     return (
         <div className="feature-container animate-fade-in">

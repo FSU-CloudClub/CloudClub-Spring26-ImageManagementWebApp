@@ -59,6 +59,16 @@ Resources:
           Properties:
             Path: /health
             Method: get
+        GetImageMetadata:
+          Type: Api
+          Properties:
+            Path: /images/{imageId}
+            Method: get
+        UpateImage:
+          Type: Api
+          Properties:
+            Path: /update-metadata
+            Method: patch
             RestApiId: !Ref ServerlessRestApi
         ListImages:
           Type: Api
@@ -87,6 +97,11 @@ Resources:
             Method: options
             RestApiId: !Ref ServerlessRestApi
 
+        DeleteImage:
+          Type: Api
+          Properties:
+            Path: /image/<image_id>
+            Method: delete
   ApplicationResourceGroup:
     Type: AWS::ResourceGroups::Group
     Properties:

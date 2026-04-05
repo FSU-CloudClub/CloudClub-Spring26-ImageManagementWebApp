@@ -6,6 +6,8 @@ from decimal import Decimal
 
 from aws_lambda_powertools.event_handler import APIGatewayRestResolver, CORSConfig
 from aws_lambda_powertools.utilities.typing.lambda_context import LambdaContext
+from aws_lambda_powertools.utilities.parser import parse
+
 from pydantic import BaseModel 
 from boto3.dynamodb.conditions import Key
 
@@ -24,7 +26,45 @@ BUCKET_NAME = os.environ["BUCKET_NAME"]
 
 # Initialize resources
 dynamodb = boto3.resource("dynamodb")
-s3 = boto3.client("s3")
+dynamodb_client = boto3.client("dynamodb")
+s3 = boto3.client('s3')
+
+table = dynamodb.Table(TABLE_NAME)
+PRESIGNED_URL_EXPIRY = 3600
+
+
+class MetadataResponse(BaseModel):
+    tags: list[str]
+    downloadUrl: str
+
+
+def generate_presigned_url(s3_client, client_method, method_parameters, expires_in):
+    return s3_client.generate_presigned_url(
+        ClientMethod=client_method,
+        Params=method_parameters,
+        ExpiresIn=expires_in
+    )
+
+@app.get("/images/<imageId>")
+def get_image_metadata(imageId: str) -> MetadataResponse:
+    user_id = app.context.user_id
+    response = table.get_item(Key={"userId": user_id, "imageId": imageId})
+    item = response.get("Item")
+
+    if not item:
+        raise NotFoundException(f"Image '{imageId}' not found for user '{user_id}'")
+
+    if "tags" not in item or "s3Key" not in item:
+        raise InternalServerErrorException("Malformed item in database")
+
+    download_url = generate_presigned_url(
+        s3_client=s3,
+        client_method="get_object",
+        method_parameters={"Bucket": BUCKET_NAME, "Key": item["s3Key"]},
+        expires_in=PRESIGNED_URL_EXPIRY
+    )
+
+    return MetadataResponse(tags=item["tags"], downloadUrl=download_url)
 
 class ImageModel(BaseModel):
     imageId: str
@@ -118,8 +158,58 @@ def list_images():
         except Exception as ve:
             print(f"DEBUG: Skipping item validation error: {ve}")
 
-    return {"images": checked_items}
+    return json.loads(json.dumps(checked_items, cls = DecimalEncoder))
+  
+class UpdateImageRequest(BaseModel):
+    userId: str
+    imageId: str
+    tags: list
 
+@app.patch("/update-metadata")
+def update_image_metadata():
+    data = parse(model=UpdateImageRequest,event=app.current_event.json_body)
+
+    if data is None:
+        raise BadRequestException("Invalid request body")
+
+    response = table.update_item(
+        Key = {"userId" : data.userId,
+                "imageId": data.imageId},
+        UpdateExpression= 'SET #t = :newTag',  
+        ExpressionAttributeNames= {'#t': 'tags'}, 
+        ExpressionAttributeValues={
+            ':newTag': data.tags
+        } 
+    )
+    
+    if not response:
+        raise InternalServerErrorException("Failed to update image metadata")
+
+
+    return {
+        "message": "Image updated",
+        "data": response
+    }
+
+  
+@app.delete("/image/<image_id>")
+def delete_image(image_id: str):
+    user_id = app.context.user_id
+        
+    s3.delete_object(
+        Bucket = BUCKET_NAME,
+        Key = f"images/{image_id}"
+    )
+    
+    response = dynamodb.Table(TABLE_NAME).delete_item(
+        Key = {
+          'userId': user_id,
+          'imageId': image_id
+        }
+    )
+        
+    return response
+  
 @app.get("/health")
 def health_check():
     return {"message": "healthy"}

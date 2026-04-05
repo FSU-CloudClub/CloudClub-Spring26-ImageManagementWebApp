@@ -40,6 +40,32 @@ export async function deleteImage(id){
     });
 }
 
+import { get } from 'aws-amplify/api';
+
+import { fetchAuthSession } from 'aws-amplify/auth';
+
+export const fetchImages = async () => {
+    try {
+        // 1. Get the session
+        const session = await fetchAuthSession();
+        const token = session.tokens?.idToken?.toString();
+
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/images`, {
+            method: 'GET',
+            headers: {
+                'Authorization': token, // Some Cognito Authorizers hate the "Bearer" prefix
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) throw new Error('Gallery request failed');
+        return await response.json();
+    } catch (err) {
+        console.error("Error fetching images:", err);
+        throw err;
+    }
+};
+
 //MELISSAS CODE FROM APP.JSX:
 
 // export async function getImageStatus(imageId){

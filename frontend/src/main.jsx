@@ -18,6 +18,14 @@ Amplify.configure({
       },
     },
   },
+  API: {
+    REST: {
+      'myApiName': {
+        endpoint: import.meta.env.VITE_API_URL,
+        region: import.meta.env.VITE_AWS_REGION
+      }
+    }
+  }
 });
 
 createRoot(document.getElementById('root')).render(

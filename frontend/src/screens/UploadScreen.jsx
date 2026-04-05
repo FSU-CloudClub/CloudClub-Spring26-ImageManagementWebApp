@@ -1,5 +1,6 @@
 import React, {useState, useEffect} from 'react';
 import { Authenticator } from '@aws-amplify/ui-react';
+import ImageUploader from '../components/ImageUpload';
 //import any API functions or compontents
 
 const UploadScreen = ({user, signOut}) => {
@@ -52,7 +53,7 @@ const UploadScreen = ({user, signOut}) => {
 
             <section className="content-area">
                 {/* Pass data down to smaller components here */}
-                <p>Everything else</p>
+                <ImageUploader/>
             </section>
         </div>
     );

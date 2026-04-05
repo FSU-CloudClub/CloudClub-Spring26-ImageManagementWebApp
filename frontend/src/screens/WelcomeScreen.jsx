@@ -53,7 +53,6 @@ const WelcomeScreen = ({user, signOut}) => {
 
             <section className="content-area">
                 {/* Pass data down to smaller components here */}
-                <p>Everything else</p>
             </section>
         </div>
     );

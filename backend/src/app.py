@@ -210,6 +210,8 @@ def delete_image(image_id: str):
         
     return response
   
+    return {"images": checked_items}
+
 @app.get("/health")
 def health_check():
     return {"message": "healthy"}

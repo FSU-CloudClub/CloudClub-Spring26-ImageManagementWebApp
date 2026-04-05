@@ -39,7 +39,6 @@ const GalleryScreen = ({user, signOut}) => {
                 setImages(result.images || []); //place the data in a state so it can be used throughout the component (you'd have to declare this with the loading state variable)
             } 
             catch (err)
-            catch (err)
             {
                 console.error("Gallery Load Error:", err);
                 setError("Issue with the API. Please check your AWS connection.");

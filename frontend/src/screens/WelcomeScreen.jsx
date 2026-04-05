@@ -48,11 +48,11 @@ const WelcomeScreen = ({user, signOut}) => {
         <div className="feature-container animate-fade-in">
             <header className="mb-4">
                 <h1>Welcome Page</h1>
-                <p className="text-muted">Logged in as: {user.username}</p>
+                {/* <p className="text-muted">Logged in as: {user.username}</p> */}
             </header>
 
             <section className="content-area">
-                {/* Pass data down to smaller components here */}
+                {/* <Dashboard user={user}/> */}
             </section>
         </div>
     );

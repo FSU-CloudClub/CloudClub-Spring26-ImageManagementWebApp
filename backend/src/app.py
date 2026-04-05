@@ -73,7 +73,7 @@ def get_upload_url():
 def list_images():
     # Retrieve user_id from the context (populated by auth_middleware)
     user_id = app.lambda_context.user_id
-    print(f"DEBUG: list_images is querying for user_id: {user_id}")
+    print(f"TRACE 5: Querying DynamoDB Table '{TABLE_NAME}' for userId: '{user_id}'")
 
     table = dynamodb.Table(TABLE_NAME)
     
@@ -84,6 +84,7 @@ def list_images():
     )
 
     items = response.get("Items", [])
+    print(f"TRACE 6: DynamoDB returned {len(items)} items for this user.")
 
     # Process items and generate download URLs
     for item in items:

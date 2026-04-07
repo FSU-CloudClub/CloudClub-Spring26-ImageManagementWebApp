@@ -1,16 +1,37 @@
-import React, {useState, useEffect} from 'react';
-import { Authenticator } from '@aws-amplify/ui-react';
+import React, {useState} from 'react';
+//import { Authenticator } from '@aws-amplify/ui-react';
 
 //import any API functions or compontents
 import ImageGrid from '../components/ImageGrid';
-import { getImages } from '../services/api';
-import { resolveS3KeyToUrl } from '../utils/s3Resolver';
+//import { getImages } from '../services/api';
+//import { resolveS3KeyToUrl } from '../utils/s3Resolver';
+
+const demoImages = [
+    {
+        id: '1',
+        title: 'Sunset Over Water',
+        s3Key: 'demo/sunset.jpg',
+        url: 'https://picsum.photos/400/300?random=1'
+    },
+    {
+        id: '2',
+        title: 'Mountain Trail',
+        s3Key: 'demo/mountain.jpg',
+        url: 'https://picsum.photos/400/300?random=2'
+    },
+    {
+        id: '3',
+        title: 'Laptop Workspace',
+        s3Key: 'demo/laptop.jpg',
+        url: 'https://picsum.photos/400/300?random=3'
+    }
+];
 
 const GalleryScreen = ({user, signOut}) => {
     //any states can go here; you can think of them like variables :)
     const [loading, setLoading] = useState(false); //set loading to true for when the page first renders
     const [error, setError] = useState(null);
-    const [images, setImages] = useState([]);
+    const [images, setImages] = useState(demoImages);
 
     //any data fetching goes here (e.g. first 20 user images if that is what you want displayed)
 
@@ -23,6 +44,7 @@ const GalleryScreen = ({user, signOut}) => {
      * */
     
     //Example hook 
+    /*
     useEffect(() =>{
         //write/define the async helper function...but we still have to call it to run it
         const loadData = async () => {
@@ -61,7 +83,9 @@ const GalleryScreen = ({user, signOut}) => {
         };
 
         loadData();
-    }, [user]); //change every time the user is changed, if empty the useEffect will only run once (MUST BE THERE IN EVERY CASE)
+    }, [user]); 
+    */ 
+    //change every time the user is changed, if empty the useEffect will only run once (MUST BE THERE IN EVERY CASE)
 
     //define what the UI will look like in all cases (loading, error, data was fetched)
     if(loading) return (

@@ -378,7 +378,8 @@ export async function deleteImage(imageId) {
 
 //     pollImageStatus(imageId);
 //   }
-{/* <input
+{
+  /* <input
     type="file"
     className="form-control mt-3"
     onChange={(e) => handleUpload(e.target.files[0])}
@@ -386,4 +387,5 @@ export async function deleteImage(imageId) {
 
 <button className="btn btn-danger mt-3" onClick={signOut}>
     Sign Out
-</button> */}
+</button> */
+}

@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Transform: AWS::Serverless-2016-10-31
-Description: backend
+Description: S26 SmartGallery Backend
 
 Globals:
   Function:
@@ -21,7 +21,13 @@ Resources:
             Headers:
               Access-Control-Allow-Origin: "'*'"
               Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
-              Access-Control-Allow-Methods: "'GET,POST,OPTIONS,PUT'"
+              Access-Control-Allow-Methods: "'GET,POST,OPTIONS,PUT,PATCH,DELETE'"
+        DEFAULT_5XX:
+          ResponseParameters:
+            Headers:
+              Access-Control-Allow-Origin: "'*'"
+              Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              Access-Control-Allow-Methods: "'GET,POST,OPTIONS,PUT,PATCH,DELETE'"
       Cors:
         AllowMethods: "'GET,POST,OPTIONS,PUT,PATCH,DELETE'"
         AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
@@ -100,7 +106,7 @@ Resources:
         DeleteImage:
           Type: Api
           Properties:
-            Path: /image/<image_id>
+            Path: /image/{image_id}
             Method: delete
   ApplicationResourceGroup:
     Type: AWS::ResourceGroups::Group

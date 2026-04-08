@@ -9,19 +9,19 @@ const demoImages = [
         imageId: 'd1',
         downloadUrl: 'https://picsum.photos/400/300?random=1',
         s3Key: 'demo/sunset-over-water.jpg',
-        Labels: ['Sunset', 'Water', 'Sky', 'Horizon', 'Orange'],
+        Labels: [['Sunset', 0.99], ['Water', 0.97], ['Sky', 0.95], ['Horizon', 0.89], ['Orange', 0.84]],
     },
     {
         imageId: 'd2',
         downloadUrl: 'https://picsum.photos/400/300?random=2',
         s3Key: 'demo/mountain-trail.jpg',
-        Labels: ['Mountain', 'Nature', 'Trail', 'Trees'],
+        Labels: [['Mountain', 0.98], ['Nature', 0.96], ['Trail', 0.91], ['Trees', 0.88]],
     },
     {
         imageId: 'd3',
         downloadUrl: 'https://picsum.photos/400/300?random=3',
         s3Key: 'demo/laptop-workspace.jpg',
-        Labels: ['Laptop', 'Workspace', 'Desk'],
+        Labels: [['Laptop', 0.99], ['Workspace', 0.93], ['Desk', 0.87]],
     },
 ];
 
@@ -197,6 +197,16 @@ const Dashboard = ({ user }) => {
         const labels = Array.isArray(img.Labels) ? img.Labels : [];
         return sum + labels.length;
     }, 0);
+    // avgConfidence — mean confidence score across every label that has one
+    // Labels can be [name, confidence] tuples (0–1) or plain strings (no score)
+    const allScores = images.flatMap((img) =>
+        Array.isArray(img.Labels)
+            ? img.Labels.filter((l) => Array.isArray(l) && l[1] != null).map((l) => l[1])
+            : []
+    );
+    const avgConfidence = allScores.length
+        ? Math.round((allScores.reduce((a, b) => a + b, 0) / allScores.length) * 100)
+        : null;
 
     // Friendly username: works for Cognito user objects
     const username = user?.attributes?.email
@@ -236,9 +246,9 @@ const Dashboard = ({ user }) => {
             {/* Stats */}
             <div className="row mb-4">
                 {[
-                    { icon: 'bi-images',     label: 'Total uploads', value: totalUploads, color: '#4f46e5' },
-                    { icon: 'bi-tags',       label: 'Total tags',    value: totalTags,    color: '#16a34a' },
-                    { icon: 'bi-bar-chart',  label: 'Avg tags/image',value: totalUploads ? (totalTags / totalUploads).toFixed(1) : 0, color: '#d97706' },
+                    { icon: 'bi-images',          label: 'Total uploads',    value: totalUploads,                              color: '#4f46e5' },
+                    { icon: 'bi-tags',             label: 'Total tags',       value: totalTags,                                 color: '#16a34a' },
+                    { icon: 'bi-shield-check',     label: 'Avg confidence',   value: avgConfidence !== null ? `${avgConfidence}%` : '—', color: '#d97706' },
                 ].map(({ icon, label, value, color }) => (
                     <div key={label} className="col-12 col-sm-4 mb-3">
                         <div

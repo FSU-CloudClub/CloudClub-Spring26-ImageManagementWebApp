@@ -1,112 +1,106 @@
 import React, { useState, useEffect } from 'react';
-
 import ImageGrid from '../components/ImageGrid';
-import { fetchImages } from '../services/api';
+import { fetchImages, deleteImage } from '../services/api';
+import { useNotification } from '../components/NotificationContext';
 
 const IS_DEMO = import.meta.env.VITE_DEMO_MODE === 'true';
 
-// Field names match exactly what ImageGrid expects:
-// imageId, downloadUrl, s3Key, Labels
+// Demo images — single source of truth for the whole gallery in demo mode.
+// Shape matches exactly what ImageGrid and api.js expect.
 const demoImages = [
     {
         imageId: 'd1',
         downloadUrl: 'https://picsum.photos/400/300?random=1',
         s3Key: 'demo/sunset-over-water.jpg',
-        Labels: ['Sunset', 'Water']
+        Labels: [['Sunset', 0.99], ['Water', 0.97], ['Sky', 0.95], ['Horizon', 0.89], ['Orange', 0.84]],
     },
     {
         imageId: 'd2',
         downloadUrl: 'https://picsum.photos/400/300?random=2',
         s3Key: 'demo/mountain-trail.jpg',
-        Labels: ['Mountain', 'Nature']
+        Labels: [['Mountain', 0.98], ['Nature', 0.96], ['Trail', 0.91], ['Trees', 0.88]],
     },
     {
         imageId: 'd3',
         downloadUrl: 'https://picsum.photos/400/300?random=3',
         s3Key: 'demo/laptop-workspace.jpg',
-        Labels: ['Laptop', 'Workspace']
-    }
+        Labels: [['Laptop', 0.99], ['Workspace', 0.93], ['Desk', 0.87]],
+    },
 ];
 
 const GalleryScreen = ({ user, signOut }) => {
+    const { showNotification } = useNotification();
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-
-    // In demo mode, seed state with demoImages immediately.
-    // In real mode, start empty — useEffect will populate via API.
     const [images, setImages] = useState(IS_DEMO ? demoImages : []);
 
-    // ---------------------------------------------------------------------------
-    // Delete & Edit
-    // In demo mode: purely local state changes. "Reset Demo" restores originals.
-    // In real mode: call the API then update state to reflect the change.
-    // ---------------------------------------------------------------------------
-
+    // -------------------------------------------------------------------------
+    // Delete
+    // Demo: local state only, wiped by Reset Demo.
+    // Real: calls deleteImage() from api.js, then removes from local state.
+    // -------------------------------------------------------------------------
     const handleDelete = async (imageId) => {
         if (IS_DEMO) {
-            // Local-only delete — wiped when user clicks "Reset Demo"
             setImages((prev) => prev.filter((img) => img.imageId !== imageId));
             return;
         }
         try {
-            // TODO: await deleteImage(imageId);  <- plug in your real API call
+            await deleteImage(imageId);
             setImages((prev) => prev.filter((img) => img.imageId !== imageId));
+            showNotification('Image deleted successfully.', 'success');
         } catch (err) {
             console.error('Delete failed:', err);
-            alert('Could not delete image. Please try again.');
+            showNotification('Could not delete image. Please try again.', 'danger');
         }
     };
 
+    // -------------------------------------------------------------------------
+    // Edit (rename)
+    // Demo: updates s3Key locally, wiped by Reset Demo.
+    // Real: no renameImage API yet — updates optimistically in local state.
+    //       Add a renameImage() call to api.js and uncomment when ready.
+    // -------------------------------------------------------------------------
     const handleEdit = async (imageId) => {
         const newName = window.prompt('Enter a new file name:');
         if (!newName) return;
 
         if (IS_DEMO) {
-            // Local-only edit — wiped when user clicks "Reset Demo"
             setImages((prev) =>
                 prev.map((img) =>
-                    img.imageId === imageId
-                        ? { ...img, s3Key: `demo/${newName}` }
-                        : img
+                    img.imageId === imageId ? { ...img, s3Key: `demo/${newName}` } : img
                 )
             );
             return;
         }
         try {
-            // TODO: await renameImage(imageId, newName);  <- plug in your real API call
+            // await renameImage(imageId, newName); // <- wire in when API is ready
             setImages((prev) =>
                 prev.map((img) =>
-                    img.imageId === imageId
-                        ? { ...img, s3Key: newName }
-                        : img
+                    img.imageId === imageId ? { ...img, s3Key: newName } : img
                 )
             );
+            showNotification('Image renamed successfully.', 'success');
         } catch (err) {
             console.error('Edit failed:', err);
-            alert('Could not rename image. Please try again.');
+            showNotification('Could not rename image. Please try again.', 'danger');
         }
     };
 
-    // ---------------------------------------------------------------------------
-    // Refresh Images (demo mode) — shows skeleton briefly, then puts back whatever
-    // the user currently has. Does NOT restore deleted/edited images.
-    // ---------------------------------------------------------------------------
+    // -------------------------------------------------------------------------
+    // Refresh Images (demo) — skeleton briefly, then restores current state.
+    // Does NOT wipe edits or deletes — that's Reset Demo's job.
+    // -------------------------------------------------------------------------
     const handleDemoRefresh = () => {
-        setImages((current) => {
-            const snapshot = current; // capture state before the skeleton
-            setLoading(true);
-            setTimeout(() => {
-                setImages(snapshot);
-                setLoading(false);
-            }, 1200);
-            return current; // no change yet
-        });
+        const snapshot = images; // capture current state before skeleton
+        setLoading(true);
+        setTimeout(() => {
+            setImages(snapshot);
+            setLoading(false);
+        }, 1200);
     };
 
-    // ---------------------------------------------------------------------------
-    // Reset Demo — shows skeleton briefly, then restores the original demo images.
-    // Wipes any edits or deletes made this session.
-    // ---------------------------------------------------------------------------
+    // -------------------------------------------------------------------------
+    // Reset Demo — skeleton briefly, then restores original demoImages.
+    // -------------------------------------------------------------------------
     const handleDemoReset = () => {
         setLoading(true);
         setTimeout(() => {
@@ -115,39 +109,29 @@ const GalleryScreen = ({ user, signOut }) => {
         }, 1200);
     };
 
-    // ---------------------------------------------------------------------------
-    // Refresh Images (real mode) — re-fetches from the API.
-    // Edits/deletes made this session that weren't persisted to the backend will
-    // be lost, which is correct behaviour.
-    // ---------------------------------------------------------------------------
+    // -------------------------------------------------------------------------
+    // Refresh Images (real) — re-fetches from the API via fetchImages().
+    // -------------------------------------------------------------------------
     const handleRealRefresh = async () => {
-        setError(null);
         setLoading(true);
         try {
             const result = await fetchImages();
             setImages(result.images || []);
         } catch (err) {
             console.error('Refresh error:', err);
-            setError('Could not refresh images. Please check your AWS connection.');
+            showNotification('Could not refresh images. Please check your AWS connection.', 'danger');
         } finally {
             setLoading(false);
         }
     };
 
-    // ---------------------------------------------------------------------------
+    // -------------------------------------------------------------------------
     // Initial load
-    // ---------------------------------------------------------------------------
-    /**
-     * To fetch data we always use the useEffect hook.
-     * @async use a function within the hook that is async (faster)
-     * @structure use a try catch block in case errors are thrown from API function
-     * @array dependency array makes the hook re-run when `user` changes (MUST BE THERE)
-     */
+    // -------------------------------------------------------------------------
     useEffect(() => {
         const loadImages = async () => {
             if (IS_DEMO) {
-                // Images already seeded in useState — nothing to fetch
-                setLoading(false);
+                setLoading(false); // already seeded in useState
                 return;
             }
             try {
@@ -156,44 +140,31 @@ const GalleryScreen = ({ user, signOut }) => {
                 setImages(result.images || []);
             } catch (err) {
                 console.error('Gallery Load Error:', err);
-                setError('Issue with the API. Please check your AWS connection.');
+                showNotification('Issue with the API. Please check your AWS connection.', 'danger');
             } finally {
                 setLoading(false);
             }
         };
-
         loadImages();
     }, [user]);
 
-    // ---------------------------------------------------------------------------
+    // -------------------------------------------------------------------------
     // Render
-    // ---------------------------------------------------------------------------
-
-    if (error) {
-        return (
-            <div className="container mt-5 text-center">
-                <div className="alert alert-danger">{error}</div>
-                <button className="btn btn-primary" onClick={handleRealRefresh}>
-                    Retry
-                </button>
-            </div>
-        );
-    }
+    // -------------------------------------------------------------------------
 
     return (
         <div className="feature-container animate-fade-in">
             <header className="mb-4 d-flex justify-content-between align-items-center">
                 <div>
-                    <h1>Gallery Page</h1>
+                    <h1>Gallery</h1>
                     <p className="text-muted">
                         {IS_DEMO
                             ? 'Demo mode — edits and deletes are local only'
-                            : 'Explore your cloud-stored images!'}
+                            : 'Explore your cloud-stored images'}
                     </p>
                 </div>
 
                 <div style={{ display: 'flex', gap: '10px' }}>
-                    {/* Refresh Images — fakes a sync in demo (keeps current state), real API call otherwise */}
                     <button
                         className="btn btn-outline-secondary btn-sm"
                         onClick={IS_DEMO ? handleDemoRefresh : handleRealRefresh}
@@ -213,7 +184,6 @@ const GalleryScreen = ({ user, signOut }) => {
                         )}
                     </button>
 
-                    {/* Reset Demo — only visible in demo mode, wipes edits and restores original 3 images */}
                     {IS_DEMO && (
                         <button
                             className="btn btn-outline-warning btn-sm"

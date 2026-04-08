@@ -1,69 +1,72 @@
 let mockImages = [];
 
 //create upload image func
-export async function uploadImage(imageFile){
-    return new Promise((resolve) => { 
-        setTimeout(() => {
-            const newImage = {
-                id: Date.now(),
-                name: imageFile.name,
-                status: "PROCESSING",
-                tags: []    
-            };
-            mockImages.push(newImage);
-            setTimeout(() => {
-                const image = mockImages.find(img => img.id === newImage.id);
-                if (image) {
-                    image.status = "COMPLETE";
-                    image.tags = ["dog", "animal", "pet"];
-                }
-            }, 5000);
-            resolve(newImage);
-        }, 1500);
-        });
+export async function uploadImage(imageFile) {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      const newImage = {
+        id: Date.now(),
+        name: imageFile.name,
+        status: "PROCESSING",
+        tags: [],
+      };
+      mockImages.push(newImage);
+      setTimeout(() => {
+        const image = mockImages.find((img) => img.id === newImage.id);
+        if (image) {
+          image.status = "COMPLETE";
+          image.tags = ["dog", "animal", "pet"];
+        }
+      }, 5000);
+      resolve(newImage);
+    }, 1500);
+  });
 }
-//create get images func 
-export async function getImages(){
-    return new Promise((resolve) =>{
-        setTimeout(() => {
-            resolve(mockImages);
-        }, 500);
-    });
+//create get images func
+export async function getImages() {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve(mockImages);
+    }, 500);
+  });
 }
 //create delete images func
-export async function deleteImage(id){
-    return new Promise((resolve) => {  
-        setTimeout(()=> {
-            mockImages = mockImages.filter(img =>img.id !== id);
-            resolve({success : true});
-        }, 500);
-    });
+export async function deleteImage(id) {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      mockImages = mockImages.filter((img) => img.id !== id);
+      resolve({ success: true });
+    }, 500);
+  });
 }
 
-import { get } from 'aws-amplify/api';
+import { get } from "aws-amplify/api";
 
-import { fetchAuthSession } from 'aws-amplify/auth';
+import { fetchAuthSession } from "aws-amplify/auth";
 
 export const fetchImages = async () => {
-    try {
-        // 1. Get the session
-        const session = await fetchAuthSession();
-        const token = session.tokens?.idToken?.toString();
+  try {
+    // 1. Get the session
+    const session = await fetchAuthSession();
+    const token = session.tokens?.idToken?.toString();
 
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/images`, {
-            method: 'GET',
-            headers: {
-                'Authorization': token, // Some Cognito Authorizers hate the "Bearer" prefix
-                'Content-Type': 'application/json'
-            }
-        });
+    const response = await fetch(`${import.meta.env.VITE_API_URL}/images`, {
+      method: "GET",
+      headers: {
+        Authorization: token, // Some Cognito Authorizers hate the "Bearer" prefix
+        "Content-Type": "application/json",
+      },
+    });
 
-        if (!response.ok) throw new Error('Gallery request failed');
-        return await response.json();
-    } catch (err) {
-        console.error("Error fetching images:", err);
-        throw err;
-    }
+    if (!response.ok) throw new Error("Gallery request failed");
+
+    const payload = await response.json();
+    const images = Array.isArray(payload) ? payload : payload?.images || [];
+    return { images };
+  } catch (err) {
+    console.error("Error fetching images:", err);
+    throw err;
+  }
 };
 
 //MELISSAS CODE FROM APP.JSX:
@@ -101,7 +104,8 @@ export const fetchImages = async () => {
 
 //     pollImageStatus(imageId);
 //   }
-{/* <input
+{
+  /* <input
     type="file"
     className="form-control mt-3"
     onChange={(e) => handleUpload(e.target.files[0])}
@@ -109,4 +113,5 @@ export const fetchImages = async () => {
 
 <button className="btn btn-danger mt-3" onClick={signOut}>
     Sign Out
-</button> */}
+</button> */
+}

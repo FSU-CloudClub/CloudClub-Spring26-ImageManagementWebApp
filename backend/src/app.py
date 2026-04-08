@@ -13,7 +13,7 @@ from boto3.dynamodb.conditions import Key
 
 # Importing your custom middleware
 from shared.auth import auth_middleware
-from shared.exceptions import exception_middleware
+from shared.exceptions import BadRequestException, InternalServerErrorException, NotFoundException, exception_middleware
 
 cors_config = CORSConfig(
     allow_origin="*", 
@@ -44,6 +44,12 @@ def generate_presigned_url(s3_client, client_method, method_parameters, expires_
         Params=method_parameters,
         ExpiresIn=expires_in
     )
+    
+class DecimalEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, Decimal):
+            return float(obj)
+        return super().default(obj)
 
 @app.get("/images/<imageId>")
 def get_image_metadata(imageId: str) -> MetadataResponse:

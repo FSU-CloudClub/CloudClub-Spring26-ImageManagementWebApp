@@ -1,60 +1,56 @@
-import React, {useState, useEffect} from 'react';
-import { Authenticator } from '@aws-amplify/ui-react';
-
-//import any API functions or compontents
+import React, { useState, useEffect } from 'react';
 import ImageGrid from '../components/ImageGrid';
 import { fetchImages } from '../services/api';
 
-const GalleryScreen = ({user, signOut}) => {
-    //any states can go here; you can think of them like variables :)
-    const [loading, setLoading] = useState(true); //set loading to true for when the page first renders
+const GalleryScreen = ({ user, signOut }) => {
+    const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [images, setImages] = useState([])
+    const [images, setImages] = useState([]);
 
-    //any data fetching goes here (e.g. first 20 user images if that is what you want displayed)
+    const handleDelete = (id) => {
+        setImages((prevImages) => prevImages.filter((img) => img.imageId !== id));
+    };
 
-    //(the following comment is in the style of java-doc commentation, usually prominent in prod code environments)
+    const handleEdit = (id) => {
+        const newTitle = window.prompt("Enter a new title:");
+        if (!newTitle) return;
+
+        setImages((prevImages) =>
+            prevImages.map((img) =>
+                img.imageId === id ? { ...img, title: newTitle } : img
+            )
+        );
+    };
+
     /**
      * To fetch data we always use the useEffect hook.
      * @async use a function within the hook that is async (faster)
      * @structure use a try catch block in case errors are thrown from API function
-     * @array there should be a dependancy array at the end of the hoook that basically makes the hook run when changes in the dependancies occur (this is important)
-     * */
-    
-    //Example hook 
-    useEffect(() =>{
-        //write/define the async helper function...but we still have to call it to run it
+     * @array there should be a dependency array at the end of the hook that makes the hook run when changes in the dependencies occur
+     */
+    useEffect(() => {
         const loadImages = async () => {
-            // Check for Demo Mode first
             if (import.meta.env.VITE_DEMO_MODE === 'true') {
                 setLoading(false);
-                setImages([]); // ImageGrid handles the mock data if this is empty and isDemo is true
+                setImages([]);
                 return;
             }
 
-            try
-            {
-                setLoading(true); //set loading to true so the UI will show "Rendering pictures"
+            try {
+                setLoading(true);
                 const result = await fetchImages();
-                setImages(result.images || []); //place the data in a state so it can be used throughout the component (you'd have to declare this with the loading state variable)
-            } 
-            catch (err)
-            {
+                setImages(result.images || []);
+            } catch (err) {
                 console.error("Gallery Load Error:", err);
                 setError("Issue with the API. Please check your AWS connection.");
-            }
-            finally //will run after try/catch
-            {
-                setLoading(false);  //we want to make the UI not show loading text anymore (because it was set to true at page initialization)
+            } finally {
+                setLoading(false);
             }
         };
 
         loadImages();
-    }, [user]); //change every time the user is changed, if empty the useEffect will only run once (MUST BE THERE IN EVERY CASE)
+    }, [user]);
 
-    //define what the UI will look like in all cases (loading, error, data was fetched)
-    
-    // Improved error display
     if (error && import.meta.env.VITE_DEMO_MODE !== 'true') {
         return (
             <div className="container mt-5 text-center">
@@ -63,12 +59,17 @@ const GalleryScreen = ({user, signOut}) => {
             </div>
         );
     }
-    if(loading) return (
-        <div className="text-center mt-5">
-            <h4>Syncing with AWS...</h4>
-            <ImageGrid loading={true} />
-        </div>);
-    if (error)  return <div className="alert alert-danger">{error}</div>;
+
+    if (loading) {
+        return (
+            <div className="text-center mt-5">
+                <h4>Syncing with AWS...</h4>
+                <ImageGrid loading={true} />
+            </div>
+        );
+    }
+
+    if (error) return <div className="alert alert-danger">{error}</div>;
 
     return (
         <div className="feature-container animate-fade-in">
@@ -77,9 +78,8 @@ const GalleryScreen = ({user, signOut}) => {
                     <h1>Gallery Page</h1>
                     <p className="text-muted">Explore your cloud-stored images</p>
                 </div>
-                {/* Adding a refresh button is always a good idea for Cloud Apps */}
-                <button 
-                    className="btn btn-outline-secondary btn-sm" 
+                <button
+                    className="btn btn-outline-secondary btn-sm"
                     onClick={() => window.location.reload()}
                     disabled={loading}
                 >
@@ -88,20 +88,23 @@ const GalleryScreen = ({user, signOut}) => {
             </header>
 
             <section className="content-area">
-                {/* Passing both images and loading state ensures the 
-                  ImageGrid knows when to show skeletons vs data 
-                */}
-                <ImageGrid images={images} loading={loading}/>
-                
-                {!loading && images.length === 0 && import.meta.env.VITE_DEMO_MODE !== 'true' && (
-                    <div className="text-center mt-5">
-                        <p>No images found. Head over to the Upload tab to add some!</p>
-                    </div>
+                {images.length > 0 ? (
+                    <ImageGrid
+                        images={images}
+                        loading={false}
+                        onDelete={handleDelete}
+                        onEdit={handleEdit}
+                    />
+                ) : (
+                    import.meta.env.VITE_DEMO_MODE !== 'true' && (
+                        <div className="text-center mt-5">
+                            <p>No images found. Head over to the Upload tab to add some!</p>
+                        </div>
+                    )
                 )}
             </section>
         </div>
     );
-
-}
+};
 
 export default GalleryScreen;

@@ -1,7 +1,7 @@
 import React from 'react';
 import '../styles/ImageGrid.css';
 
-const ImageGrid = ({ images = [], loading = true }) => {
+const ImageGrid = ({ images = [], loading = true, onDelete, onEdit }) => {
   const skeletonCount = 12;
 
   // --- DEMO MODE MOCK DATA ---
@@ -37,7 +37,7 @@ const ImageGrid = ({ images = [], loading = true }) => {
         // We check if Labels exists and has actual data inside
         const hasLabels = image.Labels && image.Labels.length > 0 && image.Labels[0] !== 'Pending Analysis';
 
-        return (
+        // return (
           <div key={image.imageId} className="image-card">
             <div className="image-container">
               <img src={image.downloadUrl} alt={friendlyName} loading="lazy" />
@@ -57,6 +57,18 @@ const ImageGrid = ({ images = [], loading = true }) => {
                   <span className="tag-pill untagged">Untagged</span>
                 )}
               </div>
+    <div className="image-grid animate-fade-in">
+      {images.map((image) => (
+        <div key={image.id} className="image-card">
+          <img src={image.url} alt={image.title || image.name} />
+
+          <div className="image-info">
+            <p className="image-name">{image.title || image.name}</p>
+            <p className="image-tags">{image.tags?.join(', ')}</p>
+
+            <div style={{ marginTop: '10px', display: 'flex', gap: '10px' }}>
+              <button onClick={() => onEdit(image.id)}>Edit</button>
+              <button onClick={() => onDelete(image.id)}>Delete</button>
             </div>
           </div>
         );

@@ -82,3 +82,17 @@
     background-position: -200% 0;
   }
 }
+
+.image-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+}
+ 
+
+.btn-xs {
+    padding: 2px 8px;
+    font-size: 0.75rem;
+    border-radius: 4px;
+    line-height: 1.5;
+}

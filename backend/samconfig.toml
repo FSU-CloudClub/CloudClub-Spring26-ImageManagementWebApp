@@ -17,9 +17,11 @@ lint = true
 capabilities = "CAPABILITY_IAM"
 confirm_changeset = true
 resolve_s3 = true
-s3_prefix = "backend"
+s3_prefix = "s26-smartgallery-backend"
 disable_rollback = true
 image_repositories = []
+stack_name = "s26-smartgallery-backend"
+parameter_overrides = "TableName=\"s26-smartgallery-prod\" BucketName=\"s26-test-images-dev\" GSIName=\"userId-uploadedAt-index\""
 
 [default.package.parameters]
 resolve_s3 = true

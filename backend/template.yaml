@@ -1,35 +1,40 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Transform: AWS::Serverless-2016-10-31
-Description: >
-  backend
+Description: backend
 
-  Sample SAM Template for backend
-
-# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
 Globals:
   Function:
-    Timeout: 3
-
+    Timeout: 10
+    MemorySize: 512
     Tracing: Active
-    # You can add LoggingConfig parameters such as the Logformat, Log Group, and SystemLogLevel or ApplicationLogLevel. Learn more here https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-resource-function.html#sam-function-loggingconfig.
     LoggingConfig:
       LogFormat: JSON
-  Api:
-    TracingEnabled: true
-
-Parameters:
-  TableName:
-    Type: String
-    Description: Name of the existing DynamoDB table
-  BucketName:
-    Type: String
-    Description: Name of the existing S3 bucket
-  GSIName:
-    Type: String
-    Default: userId-uploadedAt-index
-    Description: Name of the GSI on the DynamoDB table
 
 Resources:
+  ServerlessRestApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: Prod
+      GatewayResponses:
+        DEFAULT_4XX:
+          ResponseParameters:
+            Headers:
+              Access-Control-Allow-Origin: "'*'"
+              Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              Access-Control-Allow-Methods: "'GET,POST,OPTIONS,PUT'"
+      Cors:
+        AllowMethods: "'GET,POST,OPTIONS,PUT,PATCH,DELETE'"
+        AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+        AllowOrigin: "'*'"
+      Auth:
+        DefaultAuthorizer: MyCognitoAuthorizer
+        AddDefaultAuthorizerToOptions: false # This tells AWS: "Don't ask for a token on OPTIONS requests"
+        Authorizers:
+          MyCognitoAuthorizer:
+            UserPoolArn: "arn:aws:cognito-idp:us-east-1:357938784666:userpool/us-east-1_370bciKRJ"
+            
+
+
   BackendFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -50,7 +55,7 @@ Resources:
             BucketName: !Ref BucketName
       Events:
         Backend:
-          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Type: Api
           Properties:
             Path: /health
             Method: get
@@ -64,11 +69,34 @@ Resources:
           Properties:
             Path: /update-metadata
             Method: patch
+            RestApiId: !Ref ServerlessRestApi
         ListImages:
           Type: Api
           Properties:
             Path: /images
             Method: get
+            RestApiId: !Ref ServerlessRestApi
+        # --- Added this to ensure the preflight always works for the Gallery ---
+        ListImagesOptions:
+          Type: Api
+          Properties:
+            Path: /images
+            Method: options
+            RestApiId: !Ref ServerlessRestApi
+        GetUploadUrl:
+          Type: Api
+          Properties:
+            Path: /upload
+            Method: get
+            RestApiId: !Ref ServerlessRestApi
+        # --- Added this to ensure the preflight always works for the Uploader ---
+        UploadOptions:
+          Type: Api
+          Properties:
+            Path: /upload
+            Method: options
+            RestApiId: !Ref ServerlessRestApi
+
         DeleteImage:
           Type: Api
           Properties:
@@ -87,19 +115,45 @@ Resources:
       ResourceGroupName:
         Ref: ApplicationResourceGroup
       AutoConfigurationEnabled: "true"
+  ImageProcessorFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Handler: handlers/processor.lambda_handler
+      Runtime: python3.13
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref TableName
+          BUCKET_NAME: !Ref BucketName
+      Policies:
+        - S3ReadPolicy:
+            BucketName: !Ref BucketName
+        - DynamoDBWritePolicy:
+            TableName: !Ref TableName
+  AllowS3ToInvokeProcessor:
+      Type: AWS::Lambda::Permission
+      Properties:
+        Action: 'lambda:InvokeFunction'
+        FunctionName: !Ref ImageProcessorFunction
+        Principal: s3.amazonaws.com
+        SourceArn: !Sub "arn:aws:s3:::${BucketName}"
+
+Parameters:
+  TableName:
+    Type: String
+  BucketName:
+    Type: String
+  GSIName:
+    Type: String
+    Default: userId-uploadedAt-index
+
 Outputs:
   BackendApi:
     Description: API Gateway endpoint URL for Prod stage
     Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/Prod/"
   BackendFunction:
-    Description: Backend Lambda Function ARN
     Value: !GetAtt BackendFunction.Arn
-  BackendFunctionIamRole:
-    Description: Implicit IAM Role created for Backend function
-    Value: !GetAtt BackendFunctionRole.Arn
   ImageBucketName:
-    Description: S3 bucket for image uploads
     Value: !Ref BucketName
   ImageMetadataTableName:
-    Description: DynamoDB table for image metadata
     Value: !Ref TableName

@@ -8,6 +8,16 @@ def moderation_results(logger, request_id, flagged, categories, debug = False): 
     if debug:           #simulates etra info 
         logger.info(f"[DEBUG] data -> RequestID: {request_id}, Categories: {categories}")
 
+def run_moderation(client, bucket: str, key: str, min_confidence: float = 75.0) -> dict:
+    response = client.detect_moderation_labels(
+        Image={"S3Object": {"Bucket": bucket, "Name": key}},
+        MinConfidence=min_confidence
+    )
+    labels = response.get("ModerationLabels", [])
+    flagged = len(labels) > 0
+    categories = [label["Name"] for label in labels]
+    return {"flagged": flagged, "categories": categories}
+
 def main() -> None:             #what happens and when
 
     debug = False

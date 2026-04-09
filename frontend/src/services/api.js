@@ -222,18 +222,28 @@ export async function getImageStatus(imageId) {
     }
 
     try {
-        const token = await getAuthToken();
-        const response = await fetch(`${API_URL}/images/${imageId}`, {
-            method: 'GET',
-            headers: {
-                'Authorization': token,
-                'Content-Type': 'application/json',
-            },
+        // const token = await getAuthToken();
+        // const response = await fetch(`${API_URL}/images/${imageId}`, {
+        //     method: 'GET',
+        //     headers: {
+        //         'Authorization': token,
+        //         'Content-Type': 'application/json',
+        //     },
+        // });
+        // if (!response.ok) throw new Error(`getImageStatus failed: ${response.status}`);
+        // const data = await response.json();
+        // // Handle both a bare object and { image: {...} }
+        // return normalizeImage(data.image ?? data);
+        
+        //this is a place holder for the real return
+        return normalizeImage({ 
+            imageId,
+            s3Key,
+            status: 'COMPLETE',
+            Labels: [],
         });
-        if (!response.ok) throw new Error(`getImageStatus failed: ${response.status}`);
-        const data = await response.json();
-        // Handle both a bare object and { image: {...} }
-        return normalizeImage(data.image ?? data);
+
+
     } catch (err) {
         console.error('getImageStatus error:', err);
         throw err;
@@ -261,7 +271,9 @@ export async function deleteImage(imageId) {
 
     try {
         const token = await getAuthToken();
-        const response = await fetch(`${API_URL}/images/${imageId}`, {
+        console.log('Token:', token);
+
+        const response = await fetch(`${API_URL}/image/${imageId}`, {
             method: 'DELETE',
             headers: {
                 'Authorization': token,

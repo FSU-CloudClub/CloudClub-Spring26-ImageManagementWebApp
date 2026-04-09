@@ -1,6 +1,7 @@
 import os
 import boto3
 import json
+import uuid
 from typing import List, Optional, Any
 from decimal import Decimal
 
@@ -84,35 +85,33 @@ class ImageModel(BaseModel):
     downloadUrl: Optional[str] = None
 
 # --- UPLOAD ROUTE ---
-@app.get("/upload")
+@app.post("/upload")
 def get_upload_url():
-    # Retrieve user_id from the context (populated by auth_middleware)
     user_id = app.lambda_context.user_id
     
-    params = app.current_event.query_string_parameters or {}
-    filename = params.get("filename", "image.jpg")
-    content_type = params.get("contentType", "image/jpeg") 
+    body = app.current_event.json_body
+    filename = body.get("fileName", "image.jpg")
+    content_type = body.get("fileType", "image/jpeg")
     
-    # Organize S3 by User ID
-    object_key = f"uploads/{user_id}/{filename}"
+    image_id = str(uuid.uuid4())
+    object_key = f"uploads/{user_id}/{image_id}/{filename}"
 
-    try:
-        presigned_url = s3.generate_presigned_url(
-            ClientMethod='put_object',
-            Params={
-                'Bucket': BUCKET_NAME,
-                'Key': object_key,
-                'ContentType': content_type
-            },
-            ExpiresIn=300 
-        )
-        
-        return {
-            "uploadUrl": presigned_url,
-            "key": object_key
-        }
-    except Exception as e:
-        return {"error": str(e)}, 500
+    presigned_url = s3.generate_presigned_url(
+        ClientMethod='put_object',
+        Params={
+            'Bucket': BUCKET_NAME,
+            'Key': object_key,
+            'ContentType': content_type
+        },
+        ExpiresIn=300
+    )
+    
+    return {
+        "uploadUrl": presigned_url,
+        "imageId": image_id,
+        "s3Key": object_key,
+        "downloadUrl": f"https://{BUCKET_NAME}.s3.amazonaws.com/{object_key}"
+    }
 
 # --- IMAGES ROUTE ---
 @app.get("/images")
@@ -200,23 +199,21 @@ def update_image_metadata():
   
 @app.delete("/image/<image_id>")
 def delete_image(image_id: str):
-    user_id = app.context.user_id
+    user_id = app.lambda_context.user_id  # ← fix this line
         
     s3.delete_object(
-        Bucket = BUCKET_NAME,
-        Key = f"images/{image_id}"
+        Bucket=BUCKET_NAME,
+        Key=f"uploads/{user_id}/{image_id}"
     )
     
     response = dynamodb.Table(TABLE_NAME).delete_item(
-        Key = {
-          'userId': user_id,
-          'imageId': image_id
+        Key={
+            'userId': user_id,
+            'imageId': image_id
         }
     )
         
     return response
-  
-    return {"images": checked_items}
 
 @app.get("/health")
 def health_check():

@@ -33,13 +33,13 @@ Resources:
         AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
         AllowOrigin: "'*'"
       Auth:
-        DefaultAuthorizer: MyCognitoAuthorizer
-        AddDefaultAuthorizerToOptions: false # This tells AWS: "Don't ask for a token on OPTIONS requests"
+        DefaultAuthorizer: CognitoAuthorizer
+        AddDefaultAuthorizerToOptions: false
         Authorizers:
-          MyCognitoAuthorizer:
-            UserPoolArn: "arn:aws:cognito-idp:us-east-1:357938784666:userpool/us-east-1_370bciKRJ"
-            
-
+          CognitoAuthorizer:
+            UserPoolArn: !Ref UserPoolArn
+            Identity:
+              Header: Authorization
 
   BackendFunction:
     Type: AWS::Serverless::Function
@@ -60,21 +60,11 @@ Resources:
         - S3CrudPolicy:
             BucketName: !Ref BucketName
       Events:
-        Backend:
+        HealthCheck:
           Type: Api
           Properties:
             Path: /health
             Method: get
-        GetImageMetadata:
-          Type: Api
-          Properties:
-            Path: /images/{imageId}
-            Method: get
-        UpateImage:
-          Type: Api
-          Properties:
-            Path: /update-metadata
-            Method: patch
             RestApiId: !Ref ServerlessRestApi
         ListImages:
           Type: Api
@@ -82,45 +72,61 @@ Resources:
             Path: /images
             Method: get
             RestApiId: !Ref ServerlessRestApi
-        # --- Added this to ensure the preflight always works for the Gallery ---
         ListImagesOptions:
           Type: Api
           Properties:
             Path: /images
             Method: options
             RestApiId: !Ref ServerlessRestApi
-        GetUploadUrl:
+        GetImageMetadata:
+          Type: Api
+          Properties:
+            Path: /images/{imageId}
+            Method: get
+            RestApiId: !Ref ServerlessRestApi
+        GetImageMetadataOptions:
+          Type: Api
+          Properties:
+            Path: /images/{imageId}
+            Method: options
+            RestApiId: !Ref ServerlessRestApi
+        UploadImage:
           Type: Api
           Properties:
             Path: /upload
-            Method: get
+            Method: post
             RestApiId: !Ref ServerlessRestApi
-        # --- Added this to ensure the preflight always works for the Uploader ---
         UploadOptions:
           Type: Api
           Properties:
             Path: /upload
             Method: options
             RestApiId: !Ref ServerlessRestApi
-
+        UpdateImage:
+          Type: Api
+          Properties:
+            Path: /update-metadata
+            Method: patch
+            RestApiId: !Ref ServerlessRestApi
+        UpdateMetadataOptions:
+          Type: Api
+          Properties:
+            Path: /update-metadata
+            Method: options
+            RestApiId: !Ref ServerlessRestApi
         DeleteImage:
           Type: Api
           Properties:
             Path: /image/{image_id}
             Method: delete
-  ApplicationResourceGroup:
-    Type: AWS::ResourceGroups::Group
-    Properties:
-      Name:
-        Fn::Sub: ApplicationInsights-SAM-${AWS::StackName}
-      ResourceQuery:
-        Type: CLOUDFORMATION_STACK_1_0
-  ApplicationInsightsMonitoring:
-    Type: AWS::ApplicationInsights::Application
-    Properties:
-      ResourceGroupName:
-        Ref: ApplicationResourceGroup
-      AutoConfigurationEnabled: "true"
+            RestApiId: !Ref ServerlessRestApi
+        DeleteImageOptions:
+          Type: Api
+          Properties:
+            Path: /image/{image_id}
+            Method: options
+            RestApiId: !Ref ServerlessRestApi
+
   ImageProcessorFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -136,13 +142,30 @@ Resources:
             BucketName: !Ref BucketName
         - DynamoDBWritePolicy:
             TableName: !Ref TableName
+        - RekognitionDetectOnlyPolicy: {}
+
   AllowS3ToInvokeProcessor:
-      Type: AWS::Lambda::Permission
-      Properties:
-        Action: 'lambda:InvokeFunction'
-        FunctionName: !Ref ImageProcessorFunction
-        Principal: s3.amazonaws.com
-        SourceArn: !Sub "arn:aws:s3:::${BucketName}"
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: 'lambda:InvokeFunction'
+      FunctionName: !Ref ImageProcessorFunction
+      Principal: s3.amazonaws.com
+      SourceArn: !Sub "arn:aws:s3:::${BucketName}"
+
+  ApplicationResourceGroup:
+    Type: AWS::ResourceGroups::Group
+    Properties:
+      Name:
+        Fn::Sub: ApplicationInsights-SAM-${AWS::StackName}
+      ResourceQuery:
+        Type: CLOUDFORMATION_STACK_1_0
+
+  ApplicationInsightsMonitoring:
+    Type: AWS::ApplicationInsights::Application
+    Properties:
+      ResourceGroupName:
+        Ref: ApplicationResourceGroup
+      AutoConfigurationEnabled: "true"
 
 Parameters:
   TableName:
@@ -152,6 +175,9 @@ Parameters:
   GSIName:
     Type: String
     Default: userId-uploadedAt-index
+  UserPoolArn:
+    Type: String
+    Default: "arn:aws:cognito-idp:us-east-1:357938784666:userpool/us-east-1_370bciKRJ"
 
 Outputs:
   BackendApi:

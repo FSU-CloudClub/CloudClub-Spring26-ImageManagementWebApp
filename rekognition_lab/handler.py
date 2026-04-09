@@ -5,6 +5,7 @@ import time
 from typing import Any
 import boto3
 from parser import parse_detect_labels
+from errorHandle_issue12 import call_rekog_with_retries, handle_rekog_failure, RekogTransientError
 
 
 logger = logging.getLogger(__name__)

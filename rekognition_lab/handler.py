@@ -59,6 +59,11 @@ def handler(event: dict, context: Any) -> dict:
 
     t_rekog_start = time.monotonic()
     try:
+        raw_response = call_rekog_with_retries(client, bucket, key, request_id, logger)
+    except RekogTransientError as exc:
+        # All retries exhausted — return placeholder until Issue 5 contract lands
+        return handle_rekog_failure(exc, request_id, key, logger)
+    try:
         raw_response = detect_labels(bucket, key, min_confidence)
     except Exception as exc:
         log(request_id, "rekognition_error", bucket=bucket, key=key, error=str(exc))

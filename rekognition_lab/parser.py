@@ -1,6 +1,8 @@
 from typing import List, Dict
 
-def parse_detect_labels(resp: dict) -> List[Dict]:
+MIN_CONFIDENCE = 80.0
+
+def parse_detect_labels(resp: dict, min_confidence: float = MIN_CONFIDENCE) -> List[Dict]:
     """
     Convert AWS Rekognition detect_labels response into normalized tag format.
 
@@ -24,10 +26,12 @@ def parse_detect_labels(resp: dict) -> List[Dict]:
     tags = []
 
     for label in labels:
-        tags.append({
-            "name": label.get("Name", "").lower(),
-            "confidence": label.get("Confidence", 0.0)
-        })
+        confidence = label.get("Confidence", 0.0)
+        if confidence >= min_confidence:  
+            tags.append({
+                "name": label.get("Name", "").lower(),
+                "confidence": label.get("Confidence", 0.0)
+            })
 
     tags.sort(key=lambda t: t["confidence"], reverse=True)
 

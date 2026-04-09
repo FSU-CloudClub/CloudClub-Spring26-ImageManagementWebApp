@@ -11,6 +11,7 @@ def main():
     parser.add_argument("--key", required=True, help="S3 object key (image path)")
     parser.add_argument("--top", type = int, default = 10, help="Number of top labels to display")
     parser.add_argument("--region", default = "us-east-1", help="AWS region")
+    parser.add_argument("--min-confidence", type=float, default=float(os.environ.get("MIN_CONFIDENCE")), help="Minimum confidence threshold (default = 80.0)")
     args = parser.parse_args()
 
     rekognition = boto3.client("rekognition", region_name=args.region)

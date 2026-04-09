@@ -35,7 +35,7 @@ def extract_s3_location(event: dict) -> tuple[str, str]:
 
     raise ValueError(f"Unrecognised event record shape: {list(record.keys())}")
 
-def detect_labels(bucket: str, key: str, min_confidence: float) -> dict:
+def detect_labels(bucket: str, key: str) -> dict:
     client = get_rekognition_client()
     return client.detect_labels(
         Image={"S3Object": {"Bucket": bucket, "Name": key}},
@@ -47,7 +47,7 @@ def detect_labels(bucket: str, key: str, min_confidence: float) -> dict:
 def handler(event: dict, context: Any) -> dict:
     request_id: str = getattr(context, "aws_request_id", "local")
     t_total_start = time.monotonic()
-    min_confidence = float(os.environ.get("MIN_CONFIDENCE", "80.0"))
+    min_confidence = float(os.environ.get("MIN_CONFIDENCE"))
 
     try:
         bucket, key = extract_s3_location(event)
@@ -64,7 +64,7 @@ def handler(event: dict, context: Any) -> dict:
         return {"statusCode": 502, "body": json.dumps({"error": f"Rekognition call failed: {exc}"})}
 
     rekog_time = round((time.monotonic() - t_rekog_start) * 1000, 2)
-    parsed_tags = parse_detect_labels(raw_response)
+    parsed_tags = parse_detect_labels(raw_response, min_confidence=min_confidence)
     total_time = round((time.monotonic() - t_total_start) * 1000, 2)
 
     log(

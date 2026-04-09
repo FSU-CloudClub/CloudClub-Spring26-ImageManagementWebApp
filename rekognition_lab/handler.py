@@ -56,7 +56,7 @@ def extract_s3_location(event: dict) -> tuple[str, str]:
 def handler(event: dict, context: Any) -> dict:
     request_id: str = getattr(context, "aws_request_id", "local")
     t_total_start = time.monotonic()
-    min_confidence = float(os.environ.get("MIN_CONFIDENCE", "80.0"))
+    min_confidence = float(os.environ.get("MIN_CONFIDENCE") or "80.0")
     mod_confidence = float(os.environ.get("MOD_CONFIDENCE", "75.0"))
 
     # ── Step 1: Parse event ───────────────────────────────────────────────────
@@ -117,8 +117,7 @@ def handler(event: dict, context: Any) -> dict:
     rekog_time = round((time.monotonic() - t_rekog_start) * 1000, 2)
 
     # ── Step 4: Parse + filter tags (Issue 3, 5) ─────────────────────────────
-    all_tags = parse_detect_labels(raw_response)
-    filtered_tags = [t for t in all_tags if t["confidence"] >= min_confidence]
+    filtered_tags = parse_detect_labels(raw_response, min_confidence=min_confidence)
 
     total_time = round((time.monotonic() - t_total_start) * 1000, 2)
 

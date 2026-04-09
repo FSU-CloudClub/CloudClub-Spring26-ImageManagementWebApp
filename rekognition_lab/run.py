@@ -3,7 +3,7 @@ import boto3
 import json
 import os
 import sys
-from rekognition_lab.parser import parse_detect_labels
+from rekognition_lab.parser import parse_detect_labels, MIN_CONFIDENCE
 
 def main():
     parser = argparse.ArgumentParser(description = "Local Rekognition lab harness")
@@ -11,6 +11,12 @@ def main():
     parser.add_argument("--key", required=True, help="S3 object key (image path)")
     parser.add_argument("--top", type = int, default = 10, help="Number of top labels to display")
     parser.add_argument("--region", default = "us-east-1", help="AWS region")
+    parser.add_argument(
+        "--min-confidence",
+        type=float,
+        default=float(os.environ.get("MIN_CONFIDENCE") or MIN_CONFIDENCE),
+        help="Minimum confidence threshold (default = 80.0)",
+    )
     args = parser.parse_args()
 
     rekognition = boto3.client("rekognition", region_name=args.region)
@@ -36,7 +42,7 @@ def main():
     with open(output_path, "w") as f:
         json.dump(response, f, indent=2)
 
-    tags = parse_detect_labels(response)
+    tags = parse_detect_labels(response, min_confidence=args.min_confidence)
 
     print(f"Found {len(tags)} tags.")
     print(f"Top {min(args.top, len(tags))} tags:")

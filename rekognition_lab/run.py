@@ -17,6 +17,7 @@ def main():
         default=float(os.environ.get("MIN_CONFIDENCE") or MIN_CONFIDENCE),
         help="Minimum confidence threshold (default = 80.0)",
     )
+    parser.add_argument("--min-confidence", type=float, default=float(os.environ.get("MIN_CONFIDENCE")), help="Minimum confidence threshold (default = 80.0)")
     args = parser.parse_args()
 
     rekognition = boto3.client("rekognition", region_name=args.region)

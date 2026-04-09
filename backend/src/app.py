@@ -12,7 +12,6 @@ from aws_lambda_powertools.utilities.parser import parse
 from pydantic import BaseModel 
 from boto3.dynamodb.conditions import Key
 
-# Importing your custom middleware
 from shared.auth import auth_middleware
 from shared.exceptions import BadRequestException, InternalServerErrorException, NotFoundException, exception_middleware
 
@@ -25,7 +24,6 @@ app = APIGatewayRestResolver(cors=cors_config)
 TABLE_NAME = os.environ["TABLE_NAME"]
 BUCKET_NAME = os.environ["BUCKET_NAME"]
 
-# Initialize resources
 dynamodb = boto3.resource("dynamodb")
 dynamodb_client = boto3.client("dynamodb")
 s3 = boto3.client('s3')
@@ -45,7 +43,7 @@ def generate_presigned_url(s3_client, client_method, method_parameters, expires_
         Params=method_parameters,
         ExpiresIn=expires_in
     )
-    
+
 class DecimalEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, Decimal):
@@ -54,7 +52,7 @@ class DecimalEncoder(json.JSONEncoder):
 
 @app.get("/images/<imageId>")
 def get_image_metadata(imageId: str) -> MetadataResponse:
-    user_id = app.context.user_id
+    user_id = app.lambda_context.user_id  # fixed
     response = table.get_item(Key={"userId": user_id, "imageId": imageId})
     item = response.get("Item")
 
@@ -116,13 +114,11 @@ def get_upload_url():
 # --- IMAGES ROUTE ---
 @app.get("/images")
 def list_images():
-    # Retrieve user_id from the context (populated by auth_middleware)
     user_id = app.lambda_context.user_id
     print(f"TRACE 5: Querying DynamoDB Table '{TABLE_NAME}' for userId: '{user_id}'")
 
     table = dynamodb.Table(TABLE_NAME)
     
-    # Query DynamoDB using the identity resolved by middleware
     response = table.query(
         KeyConditionExpression=Key("userId").eq(user_id),
         ScanIndexForward=False
@@ -131,7 +127,6 @@ def list_images():
     items = response.get("Items", [])
     print(f"TRACE 6: DynamoDB returned {len(items)} items for this user.")
 
-    # Process items and generate download URLs
     for item in items:
         raw_labels = item.get("Labels", [])
         if isinstance(raw_labels, (set, list)):
@@ -163,8 +158,8 @@ def list_images():
         except Exception as ve:
             print(f"DEBUG: Skipping item validation error: {ve}")
 
-    return json.loads(json.dumps(checked_items, cls = DecimalEncoder))
-  
+    return json.loads(json.dumps(checked_items, cls=DecimalEncoder))
+
 class UpdateImageRequest(BaseModel):
     userId: str
     imageId: str
@@ -172,48 +167,57 @@ class UpdateImageRequest(BaseModel):
 
 @app.patch("/update-metadata")
 def update_image_metadata():
-    data = parse(model=UpdateImageRequest,event=app.current_event.json_body)
+    data = parse(model=UpdateImageRequest, event=app.current_event.json_body)
 
     if data is None:
         raise BadRequestException("Invalid request body")
 
     response = table.update_item(
-        Key = {"userId" : data.userId,
-                "imageId": data.imageId},
-        UpdateExpression= 'SET #t = :newTag',  
-        ExpressionAttributeNames= {'#t': 'tags'}, 
-        ExpressionAttributeValues={
-            ':newTag': data.tags
-        } 
+        Key={"userId": data.userId, "imageId": data.imageId},
+        UpdateExpression='SET #t = :newTag',
+        ExpressionAttributeNames={'#t': 'tags'},
+        ExpressionAttributeValues={':newTag': data.tags}
     )
-    
+
     if not response:
         raise InternalServerErrorException("Failed to update image metadata")
-
 
     return {
         "message": "Image updated",
         "data": response
     }
 
-  
 @app.delete("/image/<image_id>")
 def delete_image(image_id: str):
-    user_id = app.lambda_context.user_id  # ← fix this line
-        
-    s3.delete_object(
-        Bucket=BUCKET_NAME,
-        Key=f"uploads/{user_id}/{image_id}"
-    )
-    
-    response = dynamodb.Table(TABLE_NAME).delete_item(
+    user_id = app.lambda_context.user_id
+
+    # Step 1: Get the item from DynamoDB to confirm it exists and belongs to this user
+    response = table.get_item(
         Key={
             'userId': user_id,
             'imageId': image_id
         }
     )
-        
-    return response
+    item = response.get("Item")
+
+    if not item:
+        raise NotFoundException(f"Image '{image_id}' not found for user '{user_id}'")
+
+    # Step 2: Delete all S3 objects under the image prefix
+    prefix = f"uploads/{user_id}/{image_id}/"
+    objects = s3.list_objects_v2(Bucket=BUCKET_NAME, Prefix=prefix)
+    for obj in objects.get("Contents", []):
+        s3.delete_object(Bucket=BUCKET_NAME, Key=obj["Key"])
+
+    # Step 3: Delete from DynamoDB
+    table.delete_item(
+        Key={
+            'userId': user_id,
+            'imageId': image_id
+        }
+    )
+
+    return {"success": True}
 
 @app.get("/health")
 def health_check():

@@ -33,13 +33,11 @@ Resources:
         AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
         AllowOrigin: "'*'"
       Auth:
-        DefaultAuthorizer: CognitoAuthorizer
+        DefaultAuthorizer: MyCognitoAuthorizer
         AddDefaultAuthorizerToOptions: false
         Authorizers:
-          CognitoAuthorizer:
-            UserPoolArn: !Ref UserPoolArn
-            Identity:
-              Header: Authorization
+          MyCognitoAuthorizer:
+            UserPoolArn: "arn:aws:cognito-idp:us-east-1:357938784666:userpool/us-east-1_370bciKRJ"
 
   BackendFunction:
     Type: AWS::Serverless::Function
@@ -60,11 +58,21 @@ Resources:
         - S3CrudPolicy:
             BucketName: !Ref BucketName
       Events:
-        HealthCheck:
+        Backend:
           Type: Api
           Properties:
             Path: /health
             Method: get
+        GetImageMetadata:
+          Type: Api
+          Properties:
+            Path: /images/{imageId}
+            Method: get
+        UpdateImage:
+          Type: Api
+          Properties:
+            Path: /update-metadata
+            Method: patch
             RestApiId: !Ref ServerlessRestApi
         ListImages:
           Type: Api
@@ -78,19 +86,7 @@ Resources:
             Path: /images
             Method: options
             RestApiId: !Ref ServerlessRestApi
-        GetImageMetadata:
-          Type: Api
-          Properties:
-            Path: /images/{imageId}
-            Method: get
-            RestApiId: !Ref ServerlessRestApi
-        GetImageMetadataOptions:
-          Type: Api
-          Properties:
-            Path: /images/{imageId}
-            Method: options
-            RestApiId: !Ref ServerlessRestApi
-        UploadImage:
+        GetUploadUrl:
           Type: Api
           Properties:
             Path: /upload
@@ -102,29 +98,11 @@ Resources:
             Path: /upload
             Method: options
             RestApiId: !Ref ServerlessRestApi
-        UpdateImage:
-          Type: Api
-          Properties:
-            Path: /update-metadata
-            Method: patch
-            RestApiId: !Ref ServerlessRestApi
-        UpdateMetadataOptions:
-          Type: Api
-          Properties:
-            Path: /update-metadata
-            Method: options
-            RestApiId: !Ref ServerlessRestApi
         DeleteImage:
           Type: Api
           Properties:
             Path: /image/{image_id}
             Method: delete
-            RestApiId: !Ref ServerlessRestApi
-        DeleteImageOptions:
-          Type: Api
-          Properties:
-            Path: /image/{image_id}
-            Method: options
             RestApiId: !Ref ServerlessRestApi
 
   ImageProcessorFunction:
@@ -133,16 +111,25 @@ Resources:
       CodeUri: src/
       Handler: handlers/processor.lambda_handler
       Runtime: python3.13
+      Timeout: 30
+      MemorySize: 512
       Environment:
         Variables:
           TABLE_NAME: !Ref TableName
           BUCKET_NAME: !Ref BucketName
+          MIN_CONFIDENCE: "80.0"
+          MOD_CONFIDENCE: "75.0"
       Policies:
         - S3ReadPolicy:
             BucketName: !Ref BucketName
         - DynamoDBWritePolicy:
             TableName: !Ref TableName
         - RekognitionDetectOnlyPolicy: {}
+        - Statement:
+            - Effect: Allow
+              Action:
+                - rekognition:DetectModerationLabels
+              Resource: "*"
 
   AllowS3ToInvokeProcessor:
     Type: AWS::Lambda::Permission
@@ -175,9 +162,6 @@ Parameters:
   GSIName:
     Type: String
     Default: userId-uploadedAt-index
-  UserPoolArn:
-    Type: String
-    Default: "arn:aws:cognito-idp:us-east-1:357938784666:userpool/us-east-1_370bciKRJ"
 
 Outputs:
   BackendApi:
@@ -185,6 +169,8 @@ Outputs:
     Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/Prod/"
   BackendFunction:
     Value: !GetAtt BackendFunction.Arn
+  ImageProcessorFunction:
+    Value: !GetAtt ImageProcessorFunction.Arn
   ImageBucketName:
     Value: !Ref BucketName
   ImageMetadataTableName:

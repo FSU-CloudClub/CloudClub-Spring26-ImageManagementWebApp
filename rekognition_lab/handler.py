@@ -7,7 +7,7 @@ from typing import Any
 import boto3
 
 from parser import parse_detect_labels
-from errorHandle_issue12 import (
+from rekognition_lab.errorHandle import (
     call_rekog_with_retries,
     handle_rekog_failure,
     RekogTransientError,

@@ -10,24 +10,63 @@ const API_URL = import.meta.env.VITE_API_URL;
 const demoImages = [
     {
         imageId: 'd1',
-        downloadUrl: 'https://picsum.photos/400/300?random=1',
+        downloadUrl: 'https://picsum.photos/id/15/400/300',
         s3Key: 'demo/sunset-over-water.jpg',
-        Labels: [['Sunset', 0.99], ['Water', 0.97], ['Sky', 0.95], ['Horizon', 0.89], ['Orange', 0.84]],
-        status: 'COMPLETE',
+        Labels: [['Sunset', 99], ['Water', 97], ['Sky', 95], ['Horizon', 89], ['Orange', 84]],
     },
     {
         imageId: 'd2',
-        downloadUrl: 'https://picsum.photos/400/300?random=2',
+        downloadUrl: 'https://picsum.photos/id/29/400/300',
         s3Key: 'demo/mountain-trail.jpg',
-        Labels: [['Mountain', 0.98], ['Nature', 0.96], ['Trail', 0.91], ['Trees', 0.88]],
-        status: 'COMPLETE',
+        Labels: [['Mountain', 98], ['Nature', 96], ['Trail', 91], ['Trees', 88]],
     },
     {
         imageId: 'd3',
-        downloadUrl: 'https://picsum.photos/400/300?random=3',
+        downloadUrl: 'https://picsum.photos/id/20/400/300',
         s3Key: 'demo/laptop-workspace.jpg',
-        Labels: [['Laptop', 0.99], ['Workspace', 0.93], ['Desk', 0.87]],
-        status: 'COMPLETE',
+        Labels: [['Laptop', 99], ['Workspace', 93], ['Desk', 87]],
+    },
+    {
+        imageId: 'd4',
+        downloadUrl: 'https://picsum.photos/id/1015/400/300',
+        s3Key: 'demo/forest-river.jpg',
+        Labels: [['Forest', 98], ['River', 95], ['Nature', 93], ['Rocks', 88], ['Water', 85]],
+    },
+    {
+        imageId: 'd5',
+        downloadUrl: 'https://picsum.photos/id/539/400/300',
+        s3Key: 'demo/train.jpg',
+        Labels: [['Train', 99], ['Cold', 96]],
+    },
+    {
+        imageId: 'd6',
+        downloadUrl: 'https://picsum.photos/id/1018/400/300',
+        s3Key: 'demo/misty-mountains.jpg',
+        Labels: [['Mountains', 97], ['Fog', 94], ['Trees', 91], ['Landscape', 88]],
+    },
+    {
+        imageId: 'd7',
+        downloadUrl: 'https://picsum.photos/id/1040/400/300',
+        s3Key: 'demo/big-castle.jpg',
+        Labels: [['Woods', 98], ['Castle', 95], ['Architecture', 91], ['Building', 87]],
+    },
+    {
+        imageId: 'd8',
+        downloadUrl: 'https://picsum.photos/id/152/400/300',
+        s3Key: 'demo/flower-field.jpg',
+        Labels: [['Flowers', 99], ['Field', 95], ['Nature', 92], ['Color', 88], ['Spring', 83]],
+    },
+    {
+        imageId: 'd9',
+        downloadUrl: 'https://picsum.photos/id/1060/400/300',
+        s3Key: 'demo/coffee-shop.jpg',
+        Labels: [['Coffee', 98], ['Cabin', 94], ['Winter', 91], ['Tea', 87], ['Cafe', 82]],
+    },
+    {
+        imageId: 'd10',
+        downloadUrl: 'https://picsum.photos/id/247/400/300',
+        s3Key: 'demo/desert-dunes.jpg',
+        Labels: [['Desert', 99], ['Sand', 96], ['Dunes', 93], ['Sky', 88], ['Arid', 81]],
     },
 ];
 
@@ -202,54 +241,6 @@ export async function uploadImage(imageFile) {
     }
 }
 
-// ─── getImageStatus ───────────────────────────────────────────────────────────
-
-/**
- * getImageStatus — polls a single image for status + labels.
- * Demo: looks up in mockImages.
- * Real: GET /images/:imageId → normalized.
- * @param {string} imageId
- * @returns {Promise<object>} normalized image with current status and Labels
- */
-export async function getImageStatus(imageId) {
-    if (IS_DEMO) {
-        return new Promise((resolve) => {
-            setTimeout(() => {
-                const image = mockImages.find((img) => img.imageId === imageId);
-                resolve(image ?? null);
-            }, 500);
-        });
-    }
-
-    try {
-        // const token = await getAuthToken();
-        // const response = await fetch(`${API_URL}/images/${imageId}`, {
-        //     method: 'GET',
-        //     headers: {
-        //         'Authorization': token,
-        //         'Content-Type': 'application/json',
-        //     },
-        // });
-        // if (!response.ok) throw new Error(`getImageStatus failed: ${response.status}`);
-        // const data = await response.json();
-        // // Handle both a bare object and { image: {...} }
-        // return normalizeImage(data.image ?? data);
-        
-        //this is a place holder for the real return
-        return normalizeImage({ 
-            imageId,
-            s3Key,
-            status: 'COMPLETE',
-            Labels: [],
-        });
-
-
-    } catch (err) {
-        console.error('getImageStatus error:', err);
-        throw err;
-    }
-}
-
 // ─── deleteImage ─────────────────────────────────────────────────────────────
 
 /**
@@ -271,9 +262,8 @@ export async function deleteImage(imageId) {
 
     try {
         const token = await getAuthToken();
-        console.log('Token:', token);
 
-        const response = await fetch(`${API_URL}/image/${imageId}`, {
+        const response = await fetch(`${API_URL}/images/${imageId}`, {
             method: 'DELETE',
             headers: {
                 'Authorization': token,
@@ -289,3 +279,26 @@ export async function deleteImage(imageId) {
         throw err;
     }
 }
+
+    export async function updateImageTags(imageId, tags) {
+
+        try {
+            const token = await getAuthToken();
+            const session = await fetchAuthSession();
+            const userId = session.tokens?.idToken?.payload?.sub;
+
+            const response = await fetch(`${API_URL}/update-metadata`, {
+                method: 'PATCH',
+                headers: {
+                    'Authorization': token,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ userId, imageId, tags }),
+            });
+            if (!response.ok) throw new Error(`updateImageTags failed: ${response.status}`);
+            return await response.json();
+        } catch (err) {
+            console.error('updateImageTags error:', err);
+            throw err;
+        }
+    }

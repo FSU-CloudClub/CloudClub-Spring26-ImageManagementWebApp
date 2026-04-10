@@ -224,7 +224,7 @@ export default function DemoLoginPage({ onLogin }) {
             </div>
             <span className="sg-demo-title">SmartGallery</span>
           </div>
-          <p className="sg-demo-subtitle">Welcome to FSU's AWS Cloud Club Project</p>
+          <p className="sg-demo-subtitle">Welcome to FSU's AWS Cloud Club Project Demo</p>
         </div>
 
         {/* Card */}

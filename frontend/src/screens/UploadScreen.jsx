@@ -106,7 +106,7 @@ const UploadScreen = ({ user }) => {
                 <h1>Upload Image</h1>
                 <p className="text-muted">
                     {IS_DEMO
-                        ? 'Demo mode — uploads are simulated locally'
+                        ? 'Demo mode — uplaoding is disabled'
                         : 'Upload an image and AWS Rekognition will tag it automatically'}
                 </p>
             </header>
@@ -123,7 +123,7 @@ const UploadScreen = ({ user }) => {
                             disabled={uploading}
                         />
                         <p className="text-muted small mb-3">
-                            Accepted: JPEG, PNG, GIF — max 5MB
+                            Accepted: JPEG, PNG, GIF (max 5MB)
                         </p>
 
                         {preview && (

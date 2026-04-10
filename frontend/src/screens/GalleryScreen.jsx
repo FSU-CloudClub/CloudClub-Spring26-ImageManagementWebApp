@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import ImageGrid from '../components/ImageGrid';
-import { fetchImages, deleteImage } from '../services/api';
+import { fetchImages, deleteImage, updateImageTags } from '../services/api';
 import { useNotification } from '../components/NotificationContext';
 
 const IS_DEMO = import.meta.env.VITE_DEMO_MODE === 'true';

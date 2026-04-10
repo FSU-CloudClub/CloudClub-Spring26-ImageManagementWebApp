@@ -243,11 +243,11 @@ const Dashboard = ({ user }) => {
     // Labels can be [name, confidence] tuples (0–1) or plain strings (no score)
     const allScores = images.flatMap((img) =>
         Array.isArray(img.Labels)
-            ? img.Labels.filter((l) => Array.isArray(l) && l[1] != null).map((l) => l[1])
+            ? img.Labels.filter((l) => Array.isArray(l) && l[1] != null && l[1] !== 0).map((l) => l[1])
             : []
     );
     const avgConfidence = allScores.length
-        ? Math.round((allScores.reduce((a, b) => a + b, 0) / allScores.length) * 100)
+        ? Math.round(allScores.reduce((a, b) => a + b, 0) / allScores.length)
         : null;
 
     // Friendly username: works for Cognito user objects

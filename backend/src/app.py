@@ -249,6 +249,9 @@ def options_image_item(imageId: str):
 def options_upload():
     return cors_preflight_response("POST,OPTIONS")
 
+@app.route("/update-metadata", method=["OPTIONS"])
+def options_update_metadata():
+    return cors_preflight_response("PATCH,OPTIONS")
 
 @app.delete("/images/<imageId>")
 def delete_image(imageId: str):

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { uploadImage, getImageStatus } from '../services/api';
+import { uploadImage } from '../services/api';
 import { validateFile } from '../services/validators';
 import { useNotification } from '../components/NotificationContext';
 
@@ -38,18 +38,10 @@ const UploadScreen = ({ user }) => {
     const [selectedFile, setSelectedFile]   = useState(null);
     const [preview, setPreview]             = useState(null);
     const [uploading, setUploading]         = useState(false);
-    const [processing, setProcessing]       = useState(false);
     const [uploadedImage, setUploadedImage] = useState(null);
     const [error, setError]                 = useState(null); // validation errors only — shown inline
     const fileInputRef  = useRef(null);
-    const intervalRef   = useRef(null); // track poll interval so we can clear on unmount
 
-    // Clear the poll interval if the component unmounts mid-upload
-    useEffect(() => {
-        return () => {
-            if (intervalRef.current) clearInterval(intervalRef.current);
-        };
-    }, []);
 
     // -------------------------------------------------------------------------
     // File selection — validates immediately, shows preview if valid
@@ -73,29 +65,6 @@ const UploadScreen = ({ user }) => {
         setUploadedImage(null);
     };
 
-    // -------------------------------------------------------------------------
-    // pollImageStatus — polls every 3s until Rekognition finishes (COMPLETE).
-    // Stores interval ref so it can be cleared on unmount.
-    // -------------------------------------------------------------------------
-    const pollImageStatus = (imageId) => {
-        intervalRef.current = setInterval(async () => {
-            try {
-                const data = await getImageStatus(imageId);
-                if (data?.status === 'COMPLETE') {
-                    clearInterval(intervalRef.current);
-                    intervalRef.current = null;
-                    setProcessing(false);
-                    setUploadedImage(data);
-                }
-            } catch (err) {
-                console.error('Polling error:', err);
-                clearInterval(intervalRef.current);
-                intervalRef.current = null;
-                setProcessing(false);
-                showNotification('Could not retrieve image status. Check the Gallery.', 'warning');
-            }
-        }, 3000);
-    };
 
     // -------------------------------------------------------------------------
     // handleUpload
@@ -109,9 +78,7 @@ const UploadScreen = ({ user }) => {
             const result = await uploadImage(selectedFile);
             setUploadedImage(result);
             setUploading(false);
-            setProcessing(true);
-            showNotification('Upload successful! Rekognition is analysing your image...', 'info');
-            pollImageStatus(result.imageId);
+            showNotification('Upload successful! Check your gallery in a moment for tags.', 'success');
         } catch (err) {
             console.error('Upload failed:', err);
             setUploading(false);
@@ -123,14 +90,9 @@ const UploadScreen = ({ user }) => {
     // Reset
     // -------------------------------------------------------------------------
     const handleReset = () => {
-        if (intervalRef.current) {
-            clearInterval(intervalRef.current);
-            intervalRef.current = null;
-        }
         setSelectedFile(null);
         setPreview(null);
         setUploadedImage(null);
-        setProcessing(false);
         setError(null);
         if (fileInputRef.current) fileInputRef.current.value = '';
     };
@@ -231,17 +193,10 @@ const UploadScreen = ({ user }) => {
                         </p>
 
                         <div className="mb-2">
-                            {processing ? (
-                                <span className="badge bg-warning text-dark">
-                                    <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true" />
-                                    Rekognition analysing...
-                                </span>
-                            ) : (
-                                <span className="badge bg-success">✓ Complete</span>
-                            )}
+                            <span className="badge bg-success">✓ Uploaded — tags will appear in Gallery shortly</span>
                         </div>
 
-                        {!processing && uploadedImage.Labels?.length > 0 && (
+                        {uploadedImage.Labels?.length > 0 && (
                             <div className="mb-3">
                                 <p className="text-muted small mb-1">Detected tags:</p>
                                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>

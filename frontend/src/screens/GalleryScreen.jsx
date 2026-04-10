@@ -10,23 +10,66 @@ const IS_DEMO = import.meta.env.VITE_DEMO_MODE === 'true';
 const demoImages = [
     {
         imageId: 'd1',
-        downloadUrl: 'https://picsum.photos/400/300?random=1',
+        downloadUrl: 'https://picsum.photos/id/15/400/300',
         s3Key: 'demo/sunset-over-water.jpg',
-        Labels: [['Sunset', 0.99], ['Water', 0.97], ['Sky', 0.95], ['Horizon', 0.89], ['Orange', 0.84]],
+        Labels: [['Sunset', 99], ['Water', 97], ['Sky', 95], ['Horizon', 89], ['Orange', 84]],
     },
     {
         imageId: 'd2',
-        downloadUrl: 'https://picsum.photos/400/300?random=2',
+        downloadUrl: 'https://picsum.photos/id/29/400/300',
         s3Key: 'demo/mountain-trail.jpg',
-        Labels: [['Mountain', 0.98], ['Nature', 0.96], ['Trail', 0.91], ['Trees', 0.88]],
+        Labels: [['Mountain', 98], ['Nature', 96], ['Trail', 91], ['Trees', 88]],
     },
     {
         imageId: 'd3',
-        downloadUrl: 'https://picsum.photos/400/300?random=3',
+        downloadUrl: 'https://picsum.photos/id/20/400/300',
         s3Key: 'demo/laptop-workspace.jpg',
-        Labels: [['Laptop', 0.99], ['Workspace', 0.93], ['Desk', 0.87]],
+        Labels: [['Laptop', 99], ['Workspace', 93], ['Desk', 87]],
+    },
+    {
+        imageId: 'd4',
+        downloadUrl: 'https://picsum.photos/id/1015/400/300',
+        s3Key: 'demo/forest-river.jpg',
+        Labels: [['Forest', 98], ['River', 95], ['Nature', 93], ['Rocks', 88], ['Water', 85]],
+    },
+    {
+        imageId: 'd5',
+        downloadUrl: 'https://picsum.photos/id/539/400/300',
+        s3Key: 'demo/train.jpg',
+        Labels: [['Train', 99], ['Cold', 96]],
+    },
+    {
+        imageId: 'd6',
+        downloadUrl: 'https://picsum.photos/id/1018/400/300',
+        s3Key: 'demo/misty-mountains.jpg',
+        Labels: [['Mountains', 97], ['Fog', 94], ['Trees', 91], ['Landscape', 88]],
+    },
+    {
+        imageId: 'd7',
+        downloadUrl: 'https://picsum.photos/id/1040/400/300',
+        s3Key: 'demo/big-castle.jpg',
+        Labels: [['Woods', 98], ['Castle', 95], ['Architecture', 91], ['Building', 87]],
+    },
+    {
+        imageId: 'd8',
+        downloadUrl: 'https://picsum.photos/id/152/400/300',
+        s3Key: 'demo/flower-field.jpg',
+        Labels: [['Flowers', 99], ['Field', 95], ['Nature', 92], ['Color', 88], ['Spring', 83]],
+    },
+    {
+        imageId: 'd9',
+        downloadUrl: 'https://picsum.photos/id/1060/400/300',
+        s3Key: 'demo/coffee-shop.jpg',
+        Labels: [['Coffee', 98], ['Cabin', 94], ['Winter', 91], ['Tea', 87], ['Cafe', 82]],
+    },
+    {
+        imageId: 'd10',
+        downloadUrl: 'https://picsum.photos/id/247/400/300',
+        s3Key: 'demo/desert-dunes.jpg',
+        Labels: [['Desert', 99], ['Sand', 96], ['Dunes', 93], ['Sky', 88], ['Arid', 81]],
     },
 ];
+
 
 const GalleryScreen = ({ user, signOut }) => {
     const { showNotification } = useNotification();
@@ -53,37 +96,35 @@ const GalleryScreen = ({ user, signOut }) => {
         }
     };
 
-    // -------------------------------------------------------------------------
-    // Edit (rename)
-    // Demo: updates s3Key locally, wiped by Reset Demo.
-    // Real: no renameImage API yet — updates optimistically in local state.
-    //       Add a renameImage() call to api.js and uncomment when ready.
-    // -------------------------------------------------------------------------
     const handleEdit = async (imageId) => {
-        const newName = window.prompt('Enter a new file name:');
-        if (!newName) return;
+        const newTags = window.prompt('Enter new tags (comma separated):');
+        if (!newTags) return;
+
+        const formattedTags = newTags.split(',').map(tag => [tag.trim(), 0]);
 
         if (IS_DEMO) {
             setImages((prev) =>
                 prev.map((img) =>
-                    img.imageId === imageId ? { ...img, s3Key: `demo/${newName}` } : img
+                    img.imageId === imageId ? { ...img, Labels: formattedTags } : img
                 )
             );
             return;
         }
+
         try {
-            // await renameImage(imageId, newName); // <- wire in when API is ready
+            await updateImageTags(imageId, formattedTags);
             setImages((prev) =>
                 prev.map((img) =>
-                    img.imageId === imageId ? { ...img, s3Key: newName } : img
+                    img.imageId === imageId ? { ...img, Labels: formattedTags } : img
                 )
             );
-            showNotification('Image renamed successfully.', 'success');
+            showNotification('Tags updated successfully.', 'success');
         } catch (err) {
             console.error('Edit failed:', err);
-            showNotification('Could not rename image. Please try again.', 'danger');
+            showNotification('Could not update tags. Please try again.', 'danger');
         }
     };
+
 
     // -------------------------------------------------------------------------
     // Refresh Images (demo) — skeleton briefly, then restores current state.
@@ -221,174 +262,3 @@ const GalleryScreen = ({ user, signOut }) => {
 };
 
 export default GalleryScreen;
-
-// import React, { useState } from 'react';
-// // import { Authenticator } from '@aws-amplify/ui-react';
-
-// import ImageGrid from '../components/ImageGrid';
-// import { fetchImages } from '../services/api';
-
-// const GalleryScreen = ({user, signOut}) => {
-//     //any states can go here; you can think of them like variables :)
-//     const [loading, setLoading] = useState(true); //set loading to true for when the page first renders
-//     const [error, setError] = useState(null);
-//     const [images, setImages] = useState([])
-// // import { getImages } from '../services/api';
-// // import { resolveS3KeyToUrl } from '../utils/s3Resolver';
-
-// const demoImages = [
-//     {
-//         id: '1',
-//         title: 'Sunset Over Water',
-//         s3Key: 'demo/sunset.jpg',
-//         url: 'https://picsum.photos/400/300?random=1',
-//         tags: ['sunset', 'water']
-//     },
-//     {
-//         id: '2',
-//         title: 'Mountain Trail',
-//         s3Key: 'demo/mountain.jpg',
-//         url: 'https://picsum.photos/400/300?random=2',
-//         tags: ['mountain', 'nature']
-//     },
-//     {
-//         id: '3',
-//         title: 'Laptop Workspace',
-//         s3Key: 'demo/laptop.jpg',
-//         url: 'https://picsum.photos/400/300?random=3',
-//         tags: ['laptop', 'workspace']
-//     }
-// ];
-
-// const GalleryScreen = ({ user, signOut }) => {
-//     const [loading, setLoading] = useState(false);
-//     const [error, setError] = useState(null);
-//     const [images, setImages] = useState(demoImages);
-
-//     const handleDelete = (id) => {
-//         setImages((prevImages) => prevImages.filter((img) => img.id !== id));
-//     };
-
-//     //(the following comment is in the style of java-doc commentation, usually prominent in prod code environments)
-//     /**
-//      * To fetch data we always use the useEffect hook.
-//      * @async use a function within the hook that is async (faster)
-//      * @structure use a try catch block in case errors are thrown from API function
-//      * @array there should be a dependancy array at the end of the hoook that basically makes the hook run when changes in the dependancies occur (this is important)
-//      * */
-    
-//     //Example hook 
-//     useEffect(() =>{
-//         //write/define the async helper function...but we still have to call it to run it
-//         const loadImages = async () => {
-//             // Check for Demo Mode first
-//             if (import.meta.env.VITE_DEMO_MODE === 'true') {
-//                 setLoading(false);
-//                 setImages([]); // ImageGrid handles the mock data if this is empty and isDemo is true
-//                 return;
-//             }
-
-//             try
-//             {
-//                 setLoading(true); //set loading to true so the UI will show "Rendering pictures"
-//                 const result = await fetchImages();
-//                 setImages(result.images || []); //place the data in a state so it can be used throughout the component (you'd have to declare this with the loading state variable)
-//             } 
-//             catch (err)
-//             {
-//                 console.error("Gallery Load Error:", err);
-//                 setError("Issue with the API. Please check your AWS connection.");
-//             }
-//             finally //will run after try/catch
-//             {
-//                 setLoading(false);  //we want to make the UI not show loading text anymore (because it was set to true at page initialization)
-//             }
-//         };
-
-//         loadImages();
-//     }, [user]); //change every time the user is changed, if empty the useEffect will only run once (MUST BE THERE IN EVERY CASE)
-
-//     //define what the UI will look like in all cases (loading, error, data was fetched)
-    
-//     // Improved error display
-//     if (error && import.meta.env.VITE_DEMO_MODE !== 'true') {
-//         return (
-//             <div className="container mt-5 text-center">
-//                 <div className="alert alert-danger">{error}</div>
-//                 <button className="btn btn-primary" onClick={() => window.location.reload()}>Retry</button>
-//             </div>
-//         );
-//     }
-//     if(loading) return (
-//         <div className="text-center mt-5">
-//             <h4>Syncing with AWS...</h4>
-//             <ImageGrid loading={true} />
-//         </div>);
-//     if (error)  return <div className="alert alert-danger">{error}</div>;
-//     const handleEdit = (id) => {
-//         const newTitle = window.prompt("Enter a new title:");
-//         if (!newTitle) return;
-
-//         setImages((prevImages) =>
-//             prevImages.map((img) =>
-//                 img.id === id ? { ...img, title: newTitle } : img
-//             )
-//         );
-//     };
-
-//     if (loading) {
-//         return (
-//             <div className="text-center mt-5">
-//                 <h4>Syncing with AWS...</h4>
-//                 <ImageGrid loading={true} />
-//             </div>
-//         );
-//     }
-
-//     if (error) {
-//         return <div className="alert alert-danger">{error}</div>;
-//     }
-
-//     return (
-//         <div className="feature-container animate-fade-in">
-//             <header className="mb-4 d-flex justify-content-between align-items-center">
-//                 <div>
-//                     <h1>Gallery Page</h1>
-//                     <p className="text-muted">Explore your cloud-stored images</p>
-//                 </div>
-//                 {/* Adding a refresh button is always a good idea for Cloud Apps */}
-//                 <button 
-//                     className="btn btn-outline-secondary btn-sm" 
-//                     onClick={() => window.location.reload()}
-//                     disabled={loading}
-//                 >
-//                     {loading ? 'Syncing...' : 'Refresh Gallery'}
-//                 </button>
-//             </header>
-
-//             <section className="content-area">
-//                 {/* Passing both images and loading state ensures the 
-//                   ImageGrid knows when to show skeletons vs data 
-//                 */}
-//                 <ImageGrid images={images} loading={loading}/>
-                
-//                 {!loading && images.length === 0 && import.meta.env.VITE_DEMO_MODE !== 'true' && (
-//                     <div className="text-center mt-5">
-//                         <p>No images found. Head over to the Upload tab to add some!</p>
-//                     </div>
-//                 {images.length > 0 ? (
-//                     <ImageGrid
-//                         images={images}
-//                         loading={false}
-//                         onDelete={handleDelete}
-//                         onEdit={handleEdit}
-//                     />
-//                 ) : (
-//                     <p>No images found. Upload some to see them here!</p>
-//                 )}
-//             </section>
-//         </div>
-//     );
-// };
-
-// export default GalleryScreen;

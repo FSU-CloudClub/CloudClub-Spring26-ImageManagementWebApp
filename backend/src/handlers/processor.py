@@ -3,6 +3,7 @@ import logging
 import os
 import random
 import time
+from decimal import Decimal
 from datetime import datetime
 from typing import Any
 
@@ -11,7 +12,6 @@ import boto3
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-# ── AWS Clients (module-level for cold start optimization) ────────────────────
 dynamodb = boto3.resource('dynamodb')
 TABLE_NAME = os.environ.get('TABLE_NAME')
 table = dynamodb.Table(TABLE_NAME)
@@ -28,7 +28,6 @@ def get_rekognition_client():
     return _rekognition
 
 
-# ── Parser (Issue 3) ──────────────────────────────────────────────────────────
 def parse_detect_labels(resp: dict) -> list:
     labels = resp.get("Labels", [])
     tags = []
@@ -41,7 +40,6 @@ def parse_detect_labels(resp: dict) -> list:
     return tags
 
 
-# ── Retry Logic (Issue 12) ────────────────────────────────────────────────────
 RETRYABLE_ERRORS = {
     "ProvisionedThroughputExceededException",
     "ThrottlingException",
@@ -105,7 +103,6 @@ def call_rekog_with_retries(client, bucket: str, key: str, request_id: str) -> d
             time.sleep(delay)
 
 
-# ── Moderation (Issue 9) ──────────────────────────────────────────────────────
 def run_moderation(client, bucket: str, key: str) -> dict:
     response = client.detect_moderation_labels(
         Image={"S3Object": {"Bucket": bucket, "Name": key}},
@@ -122,7 +119,6 @@ def run_moderation(client, bucket: str, key: str) -> dict:
     return {"flagged": flagged, "categories": categories}
 
 
-# ── Main Lambda Handler ───────────────────────────────────────────────────────
 def lambda_handler(event, context):
     request_id = getattr(context, "aws_request_id", "local")
     client = get_rekognition_client()
@@ -131,9 +127,12 @@ def lambda_handler(event, context):
         key = record['s3']['object']['key']
         parts = key.split('/')
 
-        if len(parts) >= 2:
+        if len(parts) >= 4:
             user_id = parts[1]
-            image_id = parts[-1].split('.')[0]
+            image_id = parts[2]
+        elif len(parts) == 3:
+            user_id = parts[1]
+            image_id = parts[2].split('.')[0]
         else:
             user_id = "unknown_user"
             image_id = key.split('.')[0]
@@ -141,7 +140,6 @@ def lambda_handler(event, context):
         bucket = record['s3']['bucket']['name']
         uploaded_at = datetime.utcnow().isoformat()
 
-        # Step 1: Moderation check
         try:
             mod_result = run_moderation(client, bucket, key)
         except Exception as exc:
@@ -152,7 +150,7 @@ def lambda_handler(event, context):
             table.put_item(Item={
                 'userId': user_id, 'imageId': image_id,
                 's3Key': key, 'Labels': ['Moderation Error'],
-                'uploadedAt': uploaded_at
+                'LastUpdated': uploaded_at
             })
             continue
 
@@ -164,12 +162,11 @@ def lambda_handler(event, context):
             table.put_item(Item={
                 'userId': user_id, 'imageId': image_id,
                 's3Key': key, 'Labels': ['Flagged'],
-                'uploadedAt': uploaded_at,
-                'moderation': mod_result["categories"]
+                'LastUpdated': uploaded_at,
+                'moderation': {"flagged": True, "categories": mod_result["categories"]}
             })
             continue
 
-        # Step 2: Detect labels with retries
         try:
             raw_response = call_rekog_with_retries(client, bucket, key, request_id)
         except RekogTransientError as exc:
@@ -180,7 +177,7 @@ def lambda_handler(event, context):
             table.put_item(Item={
                 'userId': user_id, 'imageId': image_id,
                 's3Key': key, 'Labels': ['Analysis Failed'],
-                'uploadedAt': uploaded_at
+                'LastUpdated': uploaded_at
             })
             continue
         except Exception as exc:
@@ -191,23 +188,21 @@ def lambda_handler(event, context):
             table.put_item(Item={
                 'userId': user_id, 'imageId': image_id,
                 's3Key': key, 'Labels': ['Analysis Failed'],
-                'uploadedAt': uploaded_at
+                'LastUpdated': uploaded_at
             })
             continue
 
-        # Step 3: Parse and filter tags
         all_tags = parse_detect_labels(raw_response)
         filtered_tags = [t for t in all_tags if t["confidence"] >= MIN_CONFIDENCE]
-        label_names = [t["name"] for t in filtered_tags]
+        label_names = [[t["name"], Decimal(str(round(t["confidence"], 2)))] for t in filtered_tags]
 
-        # Step 4: Save to DynamoDB
         table.put_item(Item={
             'userId': user_id,
             'imageId': image_id,
             's3Key': key,
             'Labels': label_names,
-            'uploadedAt': uploaded_at,
-            'moderation': {"flagged": False}
+            'LastUpdated': uploaded_at,
+            'moderation': {"flagged": False, "categories": []}
         })
 
         logger.info(json.dumps({

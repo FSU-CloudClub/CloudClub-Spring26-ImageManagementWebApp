@@ -34,12 +34,10 @@ Resources:
         AllowOrigin: "'*'"
       Auth:
         DefaultAuthorizer: MyCognitoAuthorizer
-        AddDefaultAuthorizerToOptions: false # This tells AWS: "Don't ask for a token on OPTIONS requests"
+        AddDefaultAuthorizerToOptions: false
         Authorizers:
           MyCognitoAuthorizer:
             UserPoolArn: "arn:aws:cognito-idp:us-east-1:357938784666:userpool/us-east-1_370bciKRJ"
-            
-
 
   BackendFunction:
     Type: AWS::Serverless::Function
@@ -70,7 +68,7 @@ Resources:
           Properties:
             Path: /images/{imageId}
             Method: get
-        UpateImage:
+        UpdateImage:
           Type: Api
           Properties:
             Path: /update-metadata
@@ -82,7 +80,6 @@ Resources:
             Path: /images
             Method: get
             RestApiId: !Ref ServerlessRestApi
-        # --- Added this to ensure the preflight always works for the Gallery ---
         ListImagesOptions:
           Type: Api
           Properties:
@@ -93,21 +90,55 @@ Resources:
           Type: Api
           Properties:
             Path: /upload
-            Method: get
+            Method: post
             RestApiId: !Ref ServerlessRestApi
-        # --- Added this to ensure the preflight always works for the Uploader ---
         UploadOptions:
           Type: Api
           Properties:
             Path: /upload
             Method: options
             RestApiId: !Ref ServerlessRestApi
-
         DeleteImage:
           Type: Api
           Properties:
             Path: /image/{image_id}
             Method: delete
+            RestApiId: !Ref ServerlessRestApi
+
+  ImageProcessorFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Handler: handlers/processor.lambda_handler
+      Runtime: python3.13
+      Timeout: 30
+      MemorySize: 512
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref TableName
+          BUCKET_NAME: !Ref BucketName
+          MIN_CONFIDENCE: "80.0"
+          MOD_CONFIDENCE: "75.0"
+      Policies:
+        - S3ReadPolicy:
+            BucketName: !Ref BucketName
+        - DynamoDBWritePolicy:
+            TableName: !Ref TableName
+        - RekognitionDetectOnlyPolicy: {}
+        - Statement:
+            - Effect: Allow
+              Action:
+                - rekognition:DetectModerationLabels
+              Resource: "*"
+
+  AllowS3ToInvokeProcessor:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: 'lambda:InvokeFunction'
+      FunctionName: !Ref ImageProcessorFunction
+      Principal: s3.amazonaws.com
+      SourceArn: !Sub "arn:aws:s3:::${BucketName}"
+
   ApplicationResourceGroup:
     Type: AWS::ResourceGroups::Group
     Properties:
@@ -115,34 +146,13 @@ Resources:
         Fn::Sub: ApplicationInsights-SAM-${AWS::StackName}
       ResourceQuery:
         Type: CLOUDFORMATION_STACK_1_0
+
   ApplicationInsightsMonitoring:
     Type: AWS::ApplicationInsights::Application
     Properties:
       ResourceGroupName:
         Ref: ApplicationResourceGroup
       AutoConfigurationEnabled: "true"
-  ImageProcessorFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: src/
-      Handler: handlers/processor.lambda_handler
-      Runtime: python3.13
-      Environment:
-        Variables:
-          TABLE_NAME: !Ref TableName
-          BUCKET_NAME: !Ref BucketName
-      Policies:
-        - S3ReadPolicy:
-            BucketName: !Ref BucketName
-        - DynamoDBWritePolicy:
-            TableName: !Ref TableName
-  AllowS3ToInvokeProcessor:
-      Type: AWS::Lambda::Permission
-      Properties:
-        Action: 'lambda:InvokeFunction'
-        FunctionName: !Ref ImageProcessorFunction
-        Principal: s3.amazonaws.com
-        SourceArn: !Sub "arn:aws:s3:::${BucketName}"
 
 Parameters:
   TableName:
@@ -159,6 +169,8 @@ Outputs:
     Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/Prod/"
   BackendFunction:
     Value: !GetAtt BackendFunction.Arn
+  ImageProcessorFunction:
+    Value: !GetAtt ImageProcessorFunction.Arn
   ImageBucketName:
     Value: !Ref BucketName
   ImageMetadataTableName:

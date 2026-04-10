@@ -1,10 +1,13 @@
 import os
 import boto3
 import json
+import uuid
 from typing import List, Optional, Any
 from decimal import Decimal
+from datetime import datetime
 
 from aws_lambda_powertools.event_handler import APIGatewayRestResolver, CORSConfig
+from aws_lambda_powertools.event_handler.api_gateway import Response
 from aws_lambda_powertools.utilities.typing.lambda_context import LambdaContext
 from aws_lambda_powertools.utilities.parser import parse
 
@@ -16,8 +19,8 @@ from shared.auth import auth_middleware
 from shared.exceptions import BadRequestException, InternalServerErrorException, NotFoundException, exception_middleware
 
 cors_config = CORSConfig(
-    allow_origin="*", 
-    allow_headers=["Content-Type", "X-Amz-Date", "Authorization", "X-Api-Key", "X-Amz-Security-Token"]
+    allow_origin=os.environ["ALLOW_ORIGIN"], 
+    allow_headers=["Content-Type", "X-Amz-Date", "Authorization", "X-Api-Key", "X-Amz-Security-Token"],
 )
 app = APIGatewayRestResolver(cors=cors_config)
 
@@ -33,18 +36,53 @@ table = dynamodb.Table(TABLE_NAME)
 PRESIGNED_URL_EXPIRY = 3600
 
 
-class MetadataResponse(BaseModel):
-    tags: list[str]
-    downloadUrl: str
-
-
 def generate_presigned_url(s3_client, client_method, method_parameters, expires_in):
     return s3_client.generate_presigned_url(
         ClientMethod=client_method,
         Params=method_parameters,
         ExpiresIn=expires_in
     )
-    
+
+
+def build_download_url(s3_key: str) -> str:
+    return generate_presigned_url(
+        s3_client=s3,
+        client_method="get_object",
+        method_parameters={"Bucket": BUCKET_NAME, "Key": s3_key},
+        expires_in=PRESIGNED_URL_EXPIRY,
+    )
+
+
+def build_image_response(item: dict) -> dict:
+    labels = item.get("Labels") or item.get("tags") or []
+    s3_key = item.get("s3Key")
+    return {
+        "imageId": str(item.get("imageId", "unknown-id")),
+        "userId": item.get("userId"),
+        "s3Key": s3_key,
+        "Labels": labels,
+        "status": item.get("status", "COMPLETE"),
+        "LastUpdated": str(item.get("LastUpdated", item.get("uploadedAt", "Unknown"))),
+        "ContentType": item.get("ContentType", "image/jpeg"),
+        "size": int(item.get("size", 0)),
+        "dimension": item.get("dimension", [0, 0]),
+        "downloadUrl": build_download_url(s3_key) if s3_key else None,
+    }
+
+
+def cors_preflight_response(allowed_methods: str) -> Response:
+    return Response(
+        status_code=200,
+        content_type="application/json",
+        body={"ok": True},
+        headers={
+            "Access-Control-Allow-Origin": os.environ["ALLOW_ORIGIN"],
+            "Access-Control-Allow-Headers": "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token",
+            "Access-Control-Allow-Methods": allowed_methods,
+        },
+    )
+
+
 class DecimalEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, Decimal):
@@ -52,25 +90,17 @@ class DecimalEncoder(json.JSONEncoder):
         return super().default(obj)
 
 @app.get("/images/<imageId>")
-def get_image_metadata(imageId: str) -> MetadataResponse:
-    user_id = app.context.user_id
+def get_image_metadata(imageId: str):
+    user_id = app.lambda_context.user_id
     response = table.get_item(Key={"userId": user_id, "imageId": imageId})
     item = response.get("Item")
 
     if not item:
         raise NotFoundException(f"Image '{imageId}' not found for user '{user_id}'")
 
-    if "tags" not in item or "s3Key" not in item:
+    if "s3Key" not in item:
         raise InternalServerErrorException("Malformed item in database")
-
-    download_url = generate_presigned_url(
-        s3_client=s3,
-        client_method="get_object",
-        method_parameters={"Bucket": BUCKET_NAME, "Key": item["s3Key"]},
-        expires_in=PRESIGNED_URL_EXPIRY
-    )
-
-    return MetadataResponse(tags=item["tags"], downloadUrl=download_url)
+    return build_image_response(item)
 
 class ImageModel(BaseModel):
     imageId: str
@@ -83,33 +113,51 @@ class ImageModel(BaseModel):
     dimension: Optional[List[int]] = [0, 0]
     downloadUrl: Optional[str] = None
 
-# --- UPLOAD ROUTE ---
-@app.get("/upload")
-def get_upload_url():
-    # Retrieve user_id from the context (populated by auth_middleware)
+@app.post("/upload")
+def create_upload():
     user_id = app.lambda_context.user_id
-    
-    params = app.current_event.query_string_parameters or {}
-    filename = params.get("filename", "image.jpg")
-    content_type = params.get("contentType", "image/jpeg") 
-    
-    # Organize S3 by User ID
-    object_key = f"uploads/{user_id}/{filename}"
+    body = app.current_event.json_body or {}
+
+    filename = body.get("fileName", "image.jpg")
+    content_type = body.get("fileType", "image/jpeg")
+    _, extension = os.path.splitext(filename)
+    extension = extension or ".jpg"
+
+    image_id = str(uuid.uuid4())
+    object_key = f"uploads/{user_id}/{image_id}{extension}"
+    now = datetime.utcnow().isoformat()
 
     try:
         presigned_url = s3.generate_presigned_url(
-            ClientMethod='put_object',
+            ClientMethod="put_object",
             Params={
-                'Bucket': BUCKET_NAME,
-                'Key': object_key,
-                'ContentType': content_type
+                "Bucket": BUCKET_NAME,
+                "Key": object_key,
+                "ContentType": content_type,
             },
-            ExpiresIn=300 
+            ExpiresIn=300,
         )
-        
+
+        table.put_item(
+            Item={
+                "userId": user_id,
+                "imageId": image_id,
+                "s3Key": object_key,
+                "Labels": [],
+                "status": "PROCESSING",
+                "LastUpdated": now,
+                "uploadedAt": now,
+                "ContentType": content_type,
+                "size": 0,
+                "dimension": [0, 0],
+            }
+        )
+
         return {
             "uploadUrl": presigned_url,
-            "key": object_key
+            "imageId": image_id,
+            "s3Key": object_key,
+            "downloadUrl": build_download_url(object_key),
         }
     except Exception as e:
         return {"error": str(e)}, 500
@@ -149,18 +197,7 @@ def list_images():
     checked_items = []
     for item in items:
         try:
-            validated_image = ImageModel(
-                imageId=str(item.get("imageId", "unknown-id")),
-                userId=item.get("userId"),
-                Labels=item.get("Labels", []),
-                s3Key=item.get("s3Key", "missing-key"),
-                LastUpdated=str(item.get("LastUpdated", "Unknown")),
-                ContentType=item.get("ContentType", "image/jpeg"),
-                size=int(item.get("size", 0)),
-                dimension=item.get("dimension", [0, 0]),
-                downloadUrl=item.get("downloadUrl")
-            )
-            checked_items.append(validated_image.model_dump())
+            checked_items.append(build_image_response(item))
         except Exception as ve:
             print(f"DEBUG: Skipping item validation error: {ve}")
 
@@ -182,7 +219,7 @@ def update_image_metadata():
         Key = {"userId" : data.userId,
                 "imageId": data.imageId},
         UpdateExpression= 'SET #t = :newTag',  
-        ExpressionAttributeNames= {'#t': 'tags'}, 
+        ExpressionAttributeNames= {'#t': 'Labels'}, 
         ExpressionAttributeValues={
             ':newTag': data.tags
         } 
@@ -197,26 +234,35 @@ def update_image_metadata():
         "data": response
     }
 
-  
-@app.delete("/image/<image_id>")
-def delete_image(image_id: str):
-    user_id = app.context.user_id
-        
-    s3.delete_object(
-        Bucket = BUCKET_NAME,
-        Key = f"images/{image_id}"
+
+@app.route("/images", method=["OPTIONS"])
+def options_images():
+    return cors_preflight_response("GET,OPTIONS")
+
+
+@app.route("/images/<imageId>", method=["OPTIONS"])
+def options_image_item(imageId: str):
+    return cors_preflight_response("GET,DELETE,OPTIONS")
+
+
+@app.route("/upload", method=["OPTIONS"])
+def options_upload():
+    return cors_preflight_response("POST,OPTIONS")
+
+
+@app.delete("/images/<imageId>")
+def delete_image(imageId: str):
+    user_id = app.lambda_context.user_id
+
+    existing = table.get_item(Key={"userId": user_id, "imageId": imageId}).get("Item")
+    if existing and existing.get("s3Key"):
+        s3.delete_object(Bucket=BUCKET_NAME, Key=existing["s3Key"])
+
+    dynamodb.Table(TABLE_NAME).delete_item(
+        Key={"userId": user_id, "imageId": imageId}
     )
-    
-    response = dynamodb.Table(TABLE_NAME).delete_item(
-        Key = {
-          'userId': user_id,
-          'imageId': image_id
-        }
-    )
-        
-    return response
-  
-    return {"images": checked_items}
+
+    return {"success": True, "imageId": imageId}
 
 @app.get("/health")
 def health_check():

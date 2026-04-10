@@ -1,6 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import '../styles/navbar.css';
 
+const IS_DEMO = import.meta.env.VITE_DEMO_MODE === 'true';
+
+
 const AWSNavbar = ({ user, signOut }) => {
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const dropdownRef = useRef(null);
@@ -58,7 +61,7 @@ const AWSNavbar = ({ user, signOut }) => {
                         className="d-none d-md-block"
                         style={{ color: '#93c5fd', fontSize: '0.9rem', fontWeight: 500 }}
                     >
-                        Hello, <strong style={{ color: '#bfdbfe' }}>{username}</strong>!
+                        Hello, <strong style={{ color: '#bfdbfe' }}>{IS_DEMO ? 'Demo Guest' : user?.signInDetails?.loginId?.split('@')[0]}</strong>!
                     </span>
 
                     {/* Clickable person icon */}
@@ -129,32 +132,3 @@ const AWSNavbar = ({ user, signOut }) => {
 };
 
 export default AWSNavbar;
-// import React from 'react';
-// import './Navbar.css';
-// import { Navbar, Nav, Container } from 'react-bootstrap';
-
-// const AWSNavbar = () => {
-// return (
-// <Navbar className="Navbar" expand ="lg">
-
-// <Container>
-// <Navbar.Brand href="/" className="brand-color d-flex align-items-center">
-//     <i className="bi bi-cloud-fill me-2" style={{fontSize:"24px"}}></i>
-// </Navbar.Brand>
-// <Navbar.Toggle aria-controsl="basic-navbar-nav" />
-// <Navbar.Collapse id="basic-navbar-nav">
-// <Nav className="me-auto">
-//     <Nav.Link href="/home" className="link-color">Home</Nav.Link>
-//     <Nav.Link href="/about" className="link-color">About</Nav.Link>
-//     <Nav.Link href="/contact" className="link-color">Contact</Nav.Link>
-//     <Nav.Link href="/More information" className="link-color">More Information</Nav.Link>
-// </Nav>
-// </Navbar.Collapse>
-
-// </Container>
-// <div style={{width: '5%', height: '30px', color: 'white'}}><i size={100}class="bi bi-person-circle fs-3"></i></div>
-// </Navbar>
-// );
-// };
-
-// export default AWSNavbar; 

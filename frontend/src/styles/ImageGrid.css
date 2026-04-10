@@ -12,6 +12,8 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.3s ease;
   animation: cardFadeIn 0.3s ease-in-out;
+  display: flex;
+  flex-direction: column;
 }
 
 @keyframes cardFadeIn {
@@ -32,6 +34,9 @@
 
 .image-info {
   padding: 12px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
 }
 
 .image-name {
@@ -44,6 +49,9 @@
   font-size: 0.875rem;
   color: #666;
   margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
 }
 
 /* Skeleton Loader Styles */
@@ -84,9 +92,10 @@
 }
 
 .image-actions {
-    display: flex;
-    gap: 8px;
-    margin-top: 10px;
+  display: flex;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 10px;
 }
  
 

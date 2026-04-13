@@ -17,7 +17,7 @@ SmartGallery lets users upload images that are automatically tagged using Amazon
 ## 🔗 Links
 
 - **[Live Demo](https://s26-aws-cloud-club-smartgallery.netlify.app/)**
-- **[Project Wiki](https://github.com/FSU-CloudClub/CloudClub-Spring26-ImageManagementWebApp/wiki/Project-Scope)**
+- **[Project Wiki](https://github.com/FSU-CloudClub/CloudClub-Spring26-ImageManagementWebApp/wiki#project-introduction)**
 
 ---
 

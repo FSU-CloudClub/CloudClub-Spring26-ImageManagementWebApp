@@ -23,7 +23,7 @@ SmartGallery lets users upload images that are automatically tagged using Amazon
 
 ## A Note from the Project Lead
 
-In today's world of technology, attempting to learn new concepts and build projects can feel overwhelming. The idea behind SmartGallery is not to build an overly complex application, rather it is to provide a fun interactive introduction into frameworks, version control, system design, collaboration, and, of course, AWS. Leading 30+ students broken up into 5 teams to create a production-grade serverless application in ten weeks with many of them building on AWS and using GitHub for the first time, is something I'm genuinely proud of. This project is a reflection of what this club strives for in preparing students with real, industry-ready skills and making that level of cloud education accessible at FSU.
+In today's world of technology, attempting to learn new concepts and build projects can feel overwhelming. The idea behind SmartGallery is not to build an overly complex application, rather it is to provide a fun interactive introduction into frameworks, version control, system design, collaboration, and, of course, AWS. Leading 30+ students broken up into 5 teams to create a production-grade serverless application in nine weeks with many of them building on AWS and using GitHub for the first time, is something I'm genuinely proud of. This project is a reflection of what this club strives for in preparing students with real, industry-ready skills and making that level of cloud education accessible at FSU.
 
 — **Carter Rudolph**, Project Lead · [@CarterRudolph2005](https://github.com/CarterRudolph2005)
 
